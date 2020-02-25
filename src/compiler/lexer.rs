@@ -8,14 +8,20 @@ pub enum Token {
     Comment(String),
     Let,
     Whitespace,
+    Newline,
     Semicolon,
+    Return,
+    Equals,
     Identifier(String)
 }
 
 lexer! {
     fn take_token(tok: 'a) -> Token;
 
-    r"[ \t\r\n]" => Token::Whitespace,
+    r"[ \t\r]" => Token::Whitespace,
+    r"\n" => Token::Newline,
+    "return" => Token::Return,
+    "=" => Token::Equals,
     "[0-9]+" => Token::IntegerLiteral(tok.parse().unwrap()),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),

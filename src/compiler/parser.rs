@@ -18,16 +18,37 @@ parser! {
         statements[s] => Program{ stmts: s }
     }
 
-    statements: Vec<(Span, Expr)> {
-        statements[mut st] expr[e] Semicolon => {
-            st.push(e);
+    statements: Vec<ParseNode> {
+        statements[mut st] Semicolon Semicolon => {
             st
-        }
-        => vec![],
+        },
+        statements[mut st] Newline Newline => {
+            st
+        },
+        statements[mut st] atom[rhs] Semicolon => {
+            st.push(rhs);
+            st
+        },
+        statements[mut st] atom[rhs] Newline => {
+            st.push(rhs);
+            st
+        },
+        => vec![]
     }
 
-    expr: (Span, Expr) {
-        Identifier(s) => (span!(), Expr::Var(s))
+    assign: ParseNode {
+        Identifier(var) Equals assign[rhs] => ParseNode {
+            span: span!(),
+            node: Expr::Assign(var, Box::new(rhs))
+        },
+        Return assign[rhs] => ParseNode {
+            span: span!(),
+            node: Expr::Return(Box::new(rhs))
+        }
+    }
+
+    atom: ParseNode {
+        Identifier(s) => (span!(), Expr::Var(s)),
     }
 }
 
