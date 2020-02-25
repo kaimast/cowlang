@@ -10,5 +10,59 @@ use parser::parse;
 pub fn compile_string(input: &str) -> Program {
     let lexer = Lexer::new(input).inspect(|tok| eprintln!("tok: {:?}", tok));
     
-    return parse(lexer).unwrap();
+    match parse(lexer) {
+        Ok(p) => { return p; }
+        Err((info, e)) => {
+            match info {
+                Some((token, span)) => {
+                    // Get interesting area
+                    let mut pos = 0;
+                    let mut start = 0;
+                    let mut end = 0;
+                    let mut it = input.chars();
+
+                    let mut msg = String::default();
+
+                    while pos < span.lo {
+                        if it.next().unwrap() == '\n' {
+                            start = pos+1;
+                        }
+
+                        pos += 1;
+                    }
+
+                    for _i in start..span.lo {
+                        msg += " ";
+                    }
+
+                    while pos < span.hi {
+                        it.next().unwrap();
+                        pos += 1;
+                        msg += "^";
+                    }
+
+                    msg += &format!("--- {:?}", e);
+
+                    while let Some(c) = it.next() {
+                        if c == '\n' {
+                            end = pos;
+                            break;
+                        }
+                        pos += 1;
+                    }
+
+                    if end == 0 {
+                        end = pos;
+                    }
+
+                    panic!("Got compile error:\n\
+                            |    {}\n\
+                            |    {}", &input[start..end], msg);
+                }
+                None => {
+                    panic!("Got error: {:?}", e);
+                }
+            }
+        }
+    }
 }
