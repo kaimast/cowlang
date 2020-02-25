@@ -27,7 +27,7 @@ pub enum Value {
     None,
     Bool{content: bool},
     String{content: String},
-    Integer{content: u32},
+    Integer{content: i64},
     Map {content: HashMap<String, Value>},
     List{content: Vec<Value>}
 }
@@ -53,7 +53,7 @@ impl Value {
         return Value::String{content: String::from(content) };
     }
 
-    pub fn wrap_int(content: u32) -> Value {
+    pub fn wrap_int(content: i64) -> Value {
         return Value::Integer{content};
     }
 
@@ -72,6 +72,14 @@ impl Value {
         }
     }
 
+    pub fn add(&self, other: &Value) -> Value {
+        match &*self {
+            Value::Integer{content} => {
+                return Value::wrap_int( content + other.as_integer() .unwrap());
+            }
+            _ => { panic!("Type mismatch!"); }
+        }
+    }
     pub fn remove(&mut self, key: &str) -> Option<Value> {
         if key == "" {
             panic!("Got invalid key");
@@ -82,7 +90,6 @@ impl Value {
             _ => { panic!("Type mismatch!"); }
         }
     }
-
 
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
         if key == "" {
@@ -192,6 +199,15 @@ impl Value {
             _ => { return None; }
         }
     }
+
+    /// Convert this value into an integer (if possible)
+    pub fn as_integer(&self) -> Option<i64> {
+        match &self {
+            Value::Integer{content} => { return Some(*content); }
+            _ => { return None; }
+        }
+    }
+
 }
 
 #[ cfg(feature="python-bindings") ]

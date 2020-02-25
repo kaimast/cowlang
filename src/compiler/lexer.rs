@@ -3,13 +3,14 @@ use super::ast::Span;
 
 #[ derive(Debug, Clone) ]
 pub enum Token {
-    IntegerLiteral(i32),
+    IntegerLiteral(i64),
     StringLiteral(String),
     Comment(String),
     Let,
     Whitespace,
     Newline,
     Semicolon,
+    Plus,
     Return,
     Equals,
     Identifier(String)
@@ -22,6 +23,7 @@ lexer! {
     r"\n" => Token::Newline,
     "return" => Token::Return,
     "=" => Token::Equals,
+    r"\+" => Token::Plus,
     "[0-9]+" => Token::IntegerLiteral(tok.parse().unwrap()),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),
@@ -65,6 +67,8 @@ impl<'a> Iterator for Lexer<'a> {
                     if self.at_start {
                         // parser gets confused on empty file
                         // so do not insert a newline here
+                        //
+                        // TODO should an empty file be a vaild source?
                         return None;
                     } else {
                         // Treat EOF as new line

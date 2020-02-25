@@ -2,7 +2,7 @@ mod lexer;
 mod ast;
 mod parser;
 
-pub use ast::{Program, Expr};
+pub use ast::{Program, Expr, ParseNode};
 
 use lexer::Lexer;
 use parser::parse;

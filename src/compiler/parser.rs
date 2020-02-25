@@ -22,11 +22,11 @@ parser! {
         statements[st] extra extra => {
             st
         },
-        statements[mut st] atom[rhs] Semicolon => {
+        statements[mut st] assign[rhs] Semicolon => {
             st.push(rhs);
             st
         },
-        statements[mut st] atom[rhs] Newline => {
+        statements[mut st] assign[rhs] Newline => {
             st.push(rhs);
             st
         },
@@ -38,16 +38,34 @@ parser! {
         Semicolon => {}
     }
 
-    atom: ParseNode {
-        Identifier(var) Equals atom[rhs] => {
-            (span!(), Expr::Assign(var, Box::new(rhs)))
-        },
+    assign: ParseNode {
         Return atom[rhs] => {
             (span!(), Expr::Return(Box::new(rhs)))
         },
-        Let Identifier(var) Equals atom[rhs] => {
+        Let Identifier(var) Equals assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
-        }
+        },
+        Identifier(var) Equals assign[rhs] => {
+            (span!(), Expr::Assign(var, Box::new(rhs)))
+        },
+        term[t] => t
+    }
+
+    term: ParseNode {
+        term[lhs] Plus fact[rhs] => {
+            (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
+        },
+        fact[x] => x
+    }
+
+    fact: ParseNode {
+        atom[x] => x
+    }
+
+    atom: ParseNode {
+        Identifier(var) => {
+            (span!(), Expr::Var(var))
+        },
         IntegerLiteral(i) => {
             (span!(), Expr::Integer(i))
         }

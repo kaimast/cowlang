@@ -28,13 +28,13 @@ fn compile_empty() {
 #[test]
 fn return_integer() {
     let program = compile_string("\
-        let x = 1
-    #FIXME    return x
+        let x = 1\n\
+        x = x+4\n\
+        return x\
     ");
 
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
-    assert_eq!(result, Value::None);
-   //    assert_eq!(result, Value::wrap_int(1));
+    assert_eq!(result, Value::wrap_int(5));
 }
