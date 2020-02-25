@@ -1,0 +1,13 @@
+[package]
+name = "cowlang"
+version = "0.1.0"
+authors = ["Kai Mast <kaimast@cs.cornell.edu>"]
+edition = "2018"
+
+[dependencies]
+bincode = { version="1.2" }
+serde = { version="1.0", features=["derive"] }
+plex = { version="0.2" }
+
+[features]
+python-bindings = []
