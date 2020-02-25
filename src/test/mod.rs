@@ -13,6 +13,18 @@ fn compile_comment() {
     assert_eq!(result, Value::None);
 }
 
+/* FIXME don't panic if compile fails
+#[test]
+fn error() {
+    // make sure everything works well without a new line at the end
+    let program = compile_string("=");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::None);
+}*/
+
 #[test]
 fn compile_empty() {
     // make sure everything works well without a new line at the end

@@ -47,7 +47,7 @@ pub fn compile_string(input: &str) -> Program {
 
                     msg += &format!("--- {:?}", e);
 
-                    while let Some(c) = it.next() {
+                    for c in it {
                         if c == '\n' {
                             end = pos;
                             break;

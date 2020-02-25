@@ -25,8 +25,8 @@ impl Interpreter {
         for stmt in &program.stmts {
             let res = self.step(&mut scope, &stmt);
 
-            if res.is_some() {
-                result = res.unwrap();
+            if let Some(r) = res {
+                result = r;
                 break;
             }
         }
