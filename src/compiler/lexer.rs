@@ -35,11 +35,13 @@ lexer! {
 pub struct Lexer<'a> {
     original: &'a str,
     remaining: &'a str,
+    at_start: bool,
+    at_end: bool
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(s: &'a str) -> Lexer<'a> {
-        Self{original: s, remaining: s}
+        Self{original: s, remaining: s, at_start: true, at_end: false }
     }
 }
 
@@ -54,13 +56,28 @@ impl<'a> Iterator for Lexer<'a> {
                 self.remaining = new_remaining;
                 (tok, Span { lo, hi })
             } else {
-                return None;
+                // Return EOF token exactly once
+                if self.at_end {
+                    return None;
+                } else {
+                    self.at_end = true;
+
+                    if self.at_start {
+                        // parser gets confused on empty file
+                        // so do not insert a newline here
+                        return None;
+                    } else {
+                        // Treat EOF as new line
+                        (Token::Newline, Span{lo: self.original.len(), hi: self.original.len()})
+                    }
+                }
             };
                                                                              match tok {
                 Token::Whitespace | Token::Comment{0: _} => {
                     continue;
                 }
-                tok => { 
+                tok => {
+                    self.at_start = false;
                     return Some((tok, span));
                 }
             }

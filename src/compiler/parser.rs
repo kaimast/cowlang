@@ -19,10 +19,7 @@ parser! {
     }
 
     statements: Vec<ParseNode> {
-        statements[mut st] Semicolon Semicolon => {
-            st
-        },
-        statements[mut st] Newline Newline => {
+        statements[st] extra extra => {
             st
         },
         statements[mut st] atom[rhs] Semicolon => {
@@ -36,19 +33,24 @@ parser! {
         => vec![]
     }
 
-    assign: ParseNode {
-        Identifier(var) Equals assign[rhs] => ParseNode {
-            span: span!(),
-            node: Expr::Assign(var, Box::new(rhs))
-        },
-        Return assign[rhs] => ParseNode {
-            span: span!(),
-            node: Expr::Return(Box::new(rhs))
-        }
+    extra: () {
+        Newline => {},
+        Semicolon => {}
     }
 
     atom: ParseNode {
-        Identifier(s) => (span!(), Expr::Var(s)),
+        Identifier(var) Equals atom[rhs] => {
+            (span!(), Expr::Assign(var, Box::new(rhs)))
+        },
+        Return atom[rhs] => {
+            (span!(), Expr::Return(Box::new(rhs)))
+        },
+        Let Identifier(var) Equals atom[rhs] => {
+            (span!(), Expr::AssignNew(var, Box::new(rhs)))
+        }
+        IntegerLiteral(i) => {
+            (span!(), Expr::Integer(i))
+        }
     }
 }
 

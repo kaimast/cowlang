@@ -8,13 +8,17 @@ use lexer::Lexer;
 use parser::parse;
 
 pub fn compile_string(input: &str) -> Program {
-    let lexer = Lexer::new(input).inspect(|tok| eprintln!("tok: {:?}", tok));
+    #[ cfg(feature="verbose") ]
+    let lexer = Lexer::new(input).inspect(|elem| println!("{:?}", elem));
+ 
+    #[ cfg(not(feature="verbose")) ]
+    let lexer = Lexer::new(input);
     
     match parse(lexer) {
         Ok(p) => { return p; }
         Err((info, e)) => {
             match info {
-                Some((token, span)) => {
+                Some((_token, span)) => {
                     // Get interesting area
                     let mut pos = 0;
                     let mut start = 0;
@@ -55,9 +59,9 @@ pub fn compile_string(input: &str) -> Program {
                         end = pos;
                     }
 
-                    panic!("Got compile error:\n\
+                    panic!("Got compile error [{} to {}]:\n\
                             |    {}\n\
-                            |    {}", &input[start..end], msg);
+                            |    {}", span.lo, span.hi, &input[start..end], msg);
                 }
                 None => {
                     panic!("Got error: {:?}", e);
