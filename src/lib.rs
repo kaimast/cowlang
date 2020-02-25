@@ -3,4 +3,11 @@ pub mod values;
 mod error;
 pub use error::Error;
 
-pub mod parser;
+mod compiler;
+pub use compiler::compile_string;
+
+mod interpreter;
+pub use interpreter::Interpreter;
+
+#[cfg(test)]
+mod test;
