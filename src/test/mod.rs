@@ -1,9 +1,11 @@
-use crate::{Interpreter, compile_string};
+use crate::{Interpreter, compile_string, Value};
 
 #[test]
-fn compile_single_line() {
-    let program = compile_string("let x = 1");
+fn compile_comment() {
+    let program = compile_string("# comment");
 
-    let mut interpreter = Interpreter::new();
-    interpreter.run(&program);
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::None);
 }

@@ -31,6 +31,8 @@ parser! {
     }
 }
 
-pub fn parse<I: Iterator<Item = (Token, Span)>>(i: I) -> Result<Program, (Option<(Token, Span)>, &'static str)> {
+type ParseItem = (Token, Span);
+
+pub fn parse<I: Iterator<Item = ParseItem>>(i: I) -> Result<Program, (Option<ParseItem>, &'static str)> {
     parse_(i)
 }

@@ -1,4 +1,5 @@
-pub mod values;
+mod values;
+pub use values::Value;
 
 mod error;
 pub use error::Error;

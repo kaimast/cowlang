@@ -18,7 +18,7 @@ lexer! {
     r"[ \t\r\n]" => Token::Whitespace,
     "[0-9]+" => Token::IntegerLiteral(tok.parse().unwrap()),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
-    r"\#[ \ta-zA-Z0-9]*" => Token::Comment(tok.into()),
+    r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
     ";" => Token::Semicolon,
     "[a-zA-Z]+" => Token::Identifier(tok.into()),
