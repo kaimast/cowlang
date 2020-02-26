@@ -1,5 +1,6 @@
 use plex::lexer;
 use super::ast::Span;
+use std::collections::BTreeMap;
 
 #[ derive(Debug, Clone) ]
 pub enum Token {
@@ -8,6 +9,7 @@ pub enum Token {
     U64Literal(u64),
     StringLiteral(String),
     Comment(String),
+    Identifier(String),
     Let,
     Whitespace,
     Newline,
@@ -19,7 +21,8 @@ pub enum Token {
     Equals,
     Greater,
     Smaller,
-    Identifier(String)
+    Indent,
+    Dedent
 }
 
 lexer! {
@@ -55,12 +58,45 @@ pub struct Lexer<'a> {
     original: &'a str,
     remaining: &'a str,
     at_start: bool,
-    at_end: bool
+    at_end: bool,
+
+    indents: BTreeMap<usize, bool>,
+    position: usize
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(s: &'a str) -> Lexer<'a> {
-        Self{original: s, remaining: s, at_start: true, at_end: false }
+        let mut indents = BTreeMap::new();
+        let mut is_newline = false;
+        let mut current_icount = 0;
+        let mut last_icount = 0;
+
+        for (pos, c) in s.chars().enumerate() {
+            if c == '\n' {
+                is_newline = true;
+            }
+
+            if c == ' ' && is_newline {
+                current_icount += 1;
+            } else if c != ' ' && is_newline {
+                if current_icount < last_icount {
+                    indents.insert(pos, false);
+                } else if current_icount > last_icount {
+                    indents.insert(pos, true);
+                }
+                
+                last_icount = current_icount;
+                current_icount = 0;
+                is_newline = false;
+            }
+        }
+
+        let position = 0;
+        let at_start = true;
+        let at_end = false;
+
+        Self{original: s, remaining: s, indents,
+            position, at_start, at_end }
     }
 }
 
@@ -69,6 +105,28 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<(Token, Span)> {
         // skip over whitespace and comments 
         loop {
+            if let Some(entry) = self.indents.first_entry() {
+                let ipos = *entry.key();
+
+                if ipos == self.position {
+                    let is_indent = *entry.get();
+                    let span = Span{ lo: ipos, hi: ipos };
+
+                    entry.remove_entry();
+
+                    if is_indent {
+                        return Some((Token::Indent, span));
+                    } else {
+                        return Some((Token::Dedent, span));
+                    }
+
+                } else if ipos < self.position {
+                    panic!("invalid state!");
+                }
+            }
+
+            self.position += 1;
+
             let (tok, span) = if let Some((tok, new_remaining)) = take_token(self.remaining) {
                 let lo = self.original.len() - self.remaining.len();
                 let hi = self.original.len() - new_remaining.len();
@@ -93,7 +151,8 @@ impl<'a> Iterator for Lexer<'a> {
                     }
                 }
             };
-                                                                             match tok {
+
+            match tok {
                 Token::Whitespace | Token::Comment{0: _} => {
                     continue;
                 }
