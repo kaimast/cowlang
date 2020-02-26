@@ -66,8 +66,11 @@ parser! {
         Identifier(var) => {
             (span!(), Expr::Var(var))
         },
-        IntegerLiteral(i) => {
-            (span!(), Expr::Integer(i))
+        I64Literal(i) => {
+            (span!(), Expr::I64(i))
+        }
+        U64Literal(i) => {
+            (span!(), Expr::U64(i))
         }
     }
 }

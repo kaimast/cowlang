@@ -12,7 +12,8 @@ pub type ParseNode = (Span, Expr);
 
 pub enum Expr {
     Var(String),
-    Integer(i64),
+    I64(i64),
+    U64(u64),
     Add(Box<ParseNode>, Box<ParseNode>),
     Assign(String, Box<ParseNode>),
     AssignNew(String, Box<ParseNode>),

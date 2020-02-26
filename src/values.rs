@@ -17,7 +17,8 @@ pub enum ValueType {
     None,
     Bool,
     String,
-    Integer,
+    I64,
+    U64,
     Map,
     List
 }
@@ -25,11 +26,12 @@ pub enum ValueType {
 #[ derive(Serialize, Deserialize, Clone, Debug, PartialEq) ]
 pub enum Value {
     None,
-    Bool{content: bool},
-    String{content: String},
-    Integer{content: i64},
-    Map {content: HashMap<String, Value>},
-    List{content: Vec<Value>}
+    Bool(bool),
+    Str(String),
+    I64(i64),
+    U64(u64),
+    Map(HashMap<String, Value>),
+    List(Vec<Value>)
 }
 
 impl Value {
@@ -38,27 +40,31 @@ impl Value {
     }
 
     pub fn make_map() -> Value {
-        return Value::Map{ content: HashMap::new() };
+        return Value::Map(HashMap::new());
     }
 
     pub fn make_list() -> Value {
-        return Value::List{ content: Vec::new() };
+        return Value::List(Vec::new());
     }
 
     pub fn wrap_string(content: String) -> Value {
-        return Value::String{content};
+        return Value::Str(content);
     }
 
     pub fn wrap_str(content: &str) -> Value {
-        return Value::String{content: String::from(content) };
+        return Value::Str(String::from(content));
     }
 
-    pub fn wrap_int(content: i64) -> Value {
-        return Value::Integer{content};
+    pub fn wrap_i64(content: i64) -> Value {
+        return Value::I64(content);
+    }
+
+    pub fn wrap_u64(content: u64) -> Value {
+        return Value::U64(content);
     }
 
     pub fn wrap_bool(content: bool) -> Value {
-        return Value::Bool{content};
+        return Value::Bool(content);
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
@@ -67,16 +73,20 @@ impl Value {
         }
 
         match &*self {
-            Value::Map{content} => { return content.get(key); },
+            Value::Map(content) => { return content.get(key); },
             _ => { panic!("Type mismatch!"); }
         }
     }
 
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
-            Value::Integer{content} => {
-                return Value::wrap_int( content + other.as_integer() .unwrap());
+            Value::I64(content) => {
+                return Value::wrap_i64( content + other.as_i64().unwrap());
             }
+            Value::U64(content)  => {
+                return Value::wrap_u64( content + other.as_u64().unwrap());
+            }
+
             _ => { panic!("Type mismatch!"); }
         }
     }
@@ -86,7 +96,7 @@ impl Value {
         }
 
         match &mut *self {
-            Value::Map{content} => { return content.remove(key); },
+            Value::Map(content) => { return content.remove(key); },
             _ => { panic!("Type mismatch!"); }
         }
     }
@@ -97,7 +107,7 @@ impl Value {
         }
 
         match &mut *self {
-            Value::Map{content} => { return content.get_mut(key); },
+            Value::Map(content) => { return content.get_mut(key); },
             _ => { panic!("Type mismatch!"); }
         }
     }
@@ -110,7 +120,7 @@ impl Value {
         let &mut map;
 
         match &mut *self {
-            Value::Map{content} => { map = content; },
+            Value::Map(content) => { map = content; },
             _ => { panic!("Type mismatch!"); }
         }
 
@@ -127,22 +137,22 @@ impl Value {
         }
 
         match &mut *self {
-            Value::Map{content} => { content.insert(key, value); },
+            Value::Map(content)  => { content.insert(key, value); },
             _ => { panic!("Type mismatch!"); }
         }
     }
 
     pub fn num_children(&self) -> usize {
         match &*self {
-            Value::Map{content} => { return content.len(); }
-            Value::List{content} => { return content.len(); }
+            Value::Map(content) => { return content.len(); }
+            Value::List(content) => { return content.len(); }
             _ => { return 0; }
         }
     }
 
     pub fn map_insert(&mut self, key: String, value: Value) -> Result<(), Error> {
         match &mut *self {
-            Value::Map{content} => {
+            Value::Map(content) => {
                 let res = content.insert(key, value);
                 
                 if res.is_none() {
@@ -159,7 +169,7 @@ impl Value {
 
     pub fn map_get(&self, key: &str) -> Option<&Value> {
         match &*self {
-            Value::Map{content} => {
+            Value::Map(content) => {
                 return content.get(key);
             }
             _ => {
@@ -170,7 +180,7 @@ impl Value {
 
     pub fn list_get_at(&self, position: usize) -> Option<&Value> {
         match &*self {
-            Value::List{content} => {
+            Value::List(content) => {
                 return content.get(position);
             }
             _ => {
@@ -182,7 +192,7 @@ impl Value {
     /// Append to the list (only works if this value is a list)
     pub fn list_append(&mut self, value: Value) -> Result<(), Error> {
         match &mut *self {
-            Value::List{content} => {
+            Value::List(content) => {
                 content.push(value);
                 return Ok(());
             }
@@ -195,16 +205,28 @@ impl Value {
     /// Convert this value into a string (if possible)
     pub fn as_string(&self) -> Option<String> {
         match &self {
-            Value::String{content} => { return Some(content.to_string()); }
+            Value::Str(content) => { return Some(content.to_string()); }
             _ => { return None; }
         }
     }
 
     /// Convert this value into an integer (if possible)
-    pub fn as_integer(&self) -> Option<i64> {
+    pub fn as_i64(&self) -> Option<i64> {
         match &self {
-            Value::Integer{content} => { return Some(*content); }
+            Value::I64(content) => { return Some(*content); }
+            Value::U64(content) => { return Some(*content as i64); }
             _ => { return None; }
+
+        }
+    }
+
+    /// Convert this value into an integer (if possible)
+    pub fn as_u64(&self) -> Option<u64> {
+        match &self {
+            Value::I64(content) => { return Some(*content as u64); }
+            Value::U64(content) => { return Some(*content); }
+            _ => { return None; }
+
         }
     }
 

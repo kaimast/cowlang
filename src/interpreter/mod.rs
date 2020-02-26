@@ -81,8 +81,11 @@ impl Interpreter {
                 return None;
 
             },
-            Expr::Integer(i) => {
-                return Some( Value::wrap_int(*i) );
+            Expr::I64(i) => {
+                return Some( Value::wrap_i64(*i) );
+            },
+            Expr::U64(i) => {
+                return Some( Value::wrap_u64(*i) );
             },
             Expr::Return(rhs) => {
                 return self.step(scope, &rhs);

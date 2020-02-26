@@ -3,7 +3,8 @@ use super::ast::Span;
 
 #[ derive(Debug, Clone) ]
 pub enum Token {
-    IntegerLiteral(i64),
+    I64Literal(i64),
+    U64Literal(u64),
     StringLiteral(String),
     Comment(String),
     Let,
@@ -24,7 +25,11 @@ lexer! {
     "return" => Token::Return,
     "=" => Token::Equals,
     r"\+" => Token::Plus,
-    "[0-9]+" => Token::IntegerLiteral(tok.parse().unwrap()),
+    "[0-9]+" => Token::I64Literal(tok.parse().unwrap()),
+    "[0-9]+u" => {
+        // cut off the u at the end
+        Token::U64Literal(tok[..tok.len()-1].parse().unwrap())
+    },
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,

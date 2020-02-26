@@ -48,5 +48,19 @@ fn return_integer() {
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
-    assert_eq!(result, Value::wrap_int(5));
+    assert_eq!(result, Value::wrap_i64(5));
+}
+
+#[test]
+fn cast_to_u64() {
+    let program = compile_string("\
+        let x = 1u\n\
+        x = x+4\n\
+        return x\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::wrap_u64(5));
 }
