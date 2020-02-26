@@ -60,13 +60,31 @@ impl Interpreter {
                         panic!("No such variable {}", var);
                     }
                 }
-            },
+            }
             Expr::Add(lhs, rhs) => {
                 let left = self.step(scope, &lhs).unwrap();
                 let right = self.step(scope, &rhs).unwrap();
 
                 return Some( left.add(&right) );
-            },
+            }
+            Expr::Compare(ctype, lhs, rhs) => {
+                let left = self.step(scope, &lhs).unwrap();
+                let right = self.step(scope, &rhs).unwrap();
+
+                let result = match ctype {
+                    CompareType::Greater => {
+                        left.is_greater_than(&right)
+                    }
+                    CompareType::Smaller => {
+                        left.is_smaller_than(&right)
+                    }
+                    CompareType::Equals => {
+                        left.equals(&right)
+                    }
+                };
+
+                return Some(Value::wrap_bool(result));
+            }
             Expr::Not(rhs) => {
                 let right = self.step(scope, &rhs).unwrap();
                 return Some( right.negate() );

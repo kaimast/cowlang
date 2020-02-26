@@ -10,6 +10,12 @@ pub struct Program {
 
 pub type ParseNode = (Span, Expr);
 
+pub enum CompareType {
+    Equals,
+    Greater,
+    Smaller
+}
+
 pub enum Expr {
     Var(String),
     I64(i64),
@@ -19,5 +25,6 @@ pub enum Expr {
     Add(Box<ParseNode>, Box<ParseNode>),
     Assign(String, Box<ParseNode>),
     AssignNew(String, Box<ParseNode>),
+    Compare(CompareType, Box<ParseNode>, Box<ParseNode>),
     Return(Box<ParseNode>)
 }

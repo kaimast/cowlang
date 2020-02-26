@@ -39,25 +39,34 @@ parser! {
     }
 
     assign: ParseNode {
-        Return atom[rhs] => {
+        Return assign[rhs] => {
             (span!(), Expr::Return(Box::new(rhs)))
         },
-        Not atom[rhs] => {
-            (span!(), Expr::Not(Box::new(rhs)))
-        },
-        Let Identifier(var) Equals assign[rhs] => {
+        Let Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
         },
-        Identifier(var) Equals assign[rhs] => {
+        Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
         },
         term[t] => t
     }
 
     term: ParseNode {
+        Not fact[rhs] => {
+            (span!(), Expr::Not(Box::new(rhs)))
+        },
+        term[lhs] Equals fact[rhs] => {
+            (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
+        },
         term[lhs] Plus fact[rhs] => {
             (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
         },
+        term[lhs] Greater fact[rhs] => {
+            (span!(), Expr::Compare(CompareType::Greater, Box::new(lhs), Box::new(rhs)))
+        }
+        term[lhs] Smaller fact[rhs] => {
+            (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
+        }
         fact[x] => x
     }
 

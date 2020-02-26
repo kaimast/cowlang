@@ -78,3 +78,33 @@ fn negate_boolean() {
 
     assert_eq!(result, Value::wrap_bool(true));
 }
+
+#[test]
+fn equals() {
+    let program = compile_string("\
+        let x = true\n\
+        let y = false\n\
+        return x == y\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::wrap_bool(false));
+}
+
+
+#[test]
+fn greater_than() {
+    let program = compile_string("\
+        let x = 5\n\
+        return x > 3\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::wrap_bool(true));
+}
+
+

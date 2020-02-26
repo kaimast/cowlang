@@ -15,7 +15,10 @@ pub enum Token {
     Plus,
     Not,
     Return,
+    Assign,
     Equals,
+    Greater,
+    Smaller,
     Identifier(String)
 }
 
@@ -29,8 +32,11 @@ lexer! {
     "!" => Token::Not,
     "true" => Token::BoolLiteral(true),
     "false" => Token::BoolLiteral(false),
-    "=" => Token::Equals,
+    "=" => Token::Assign,
+    "==" => Token::Equals,
     r"\+" => Token::Plus,
+    "<" => Token::Smaller,
+    ">" => Token::Greater,
     "[0-9]+" => Token::I64Literal(tok.parse().unwrap()),
     "[0-9]+u" => {
         // cut off the u at the end

@@ -78,6 +78,46 @@ impl Value {
         }
     }
 
+    pub fn is_greater_than(&self, other: &Value) -> bool {
+        match &*self {
+            Value::I64(content) => {
+                content > &other.as_i64().unwrap()
+            }
+            Value::U64(content)  => {
+                content > &other.as_u64().unwrap()
+            }
+            _ => { panic!("Type mismatch!"); }
+        }
+    }
+
+    pub fn equals(&self, other: &Value) -> bool {
+        match &*self {
+            Value::I64(content) => {
+                content == &other.as_i64().unwrap()
+            }
+            Value::U64(content)  => {
+                content == &other.as_u64().unwrap()
+            }
+            Value::Bool(content) => {
+                content == &other.as_bool().unwrap()
+            }
+            _ => { panic!("Type mismatch!"); }
+        }
+    }
+
+
+    pub fn is_smaller_than(&self, other: &Value) -> bool {
+        match &*self {
+            Value::I64(content) => {
+                content < &other.as_i64().unwrap()
+            }
+            Value::U64(content)  => {
+                content < &other.as_u64().unwrap()
+            }
+            _ => { panic!("Type mismatch!"); }
+        }
+    }
+
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
             Value::I64(content) => {
@@ -217,6 +257,17 @@ impl Value {
         match &self {
             Value::Str(content) => { return Some(content.to_string()); }
             _ => { return None; }
+        }
+    }
+
+    /// Convert this value into a boolean (if possible)
+    pub fn as_bool(&self) -> Option<bool> {
+        match &self {
+            Value::Bool(content) => {return Some(*content); }
+            Value::I64(content) => { return Some(*content > 0); }
+            Value::U64(content) => { return Some(*content > 0); }
+            _ => { return None; }
+
         }
     }
 
