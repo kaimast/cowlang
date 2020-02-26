@@ -67,6 +67,10 @@ impl Interpreter {
 
                 return Some( left.add(&right) );
             },
+            Expr::Not(rhs) => {
+                let right = self.step(scope, &rhs).unwrap();
+                return Some( right.negate() );
+            }
             Expr::Assign(var, rhs) => {
                 let val = self.step(scope, rhs).unwrap();
 
@@ -80,6 +84,9 @@ impl Interpreter {
                 }
                 return None;
 
+            },
+            Expr::Bool(b) => {
+                return Some( Value::wrap_bool(*b) );
             },
             Expr::I64(i) => {
                 return Some( Value::wrap_i64(*i) );

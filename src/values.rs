@@ -90,6 +90,16 @@ impl Value {
             _ => { panic!("Type mismatch!"); }
         }
     }
+
+    pub fn negate(&self) -> Value {
+        match &*self {
+            Value::Bool(content) => {
+                return Value::wrap_bool(!content);
+            }
+            _ => { panic!("Type mismatch!"); }
+        }
+    }
+
     pub fn remove(&mut self, key: &str) -> Option<Value> {
         if key == "" {
             panic!("Got invalid key");

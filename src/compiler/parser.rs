@@ -42,6 +42,9 @@ parser! {
         Return atom[rhs] => {
             (span!(), Expr::Return(Box::new(rhs)))
         },
+        Not atom[rhs] => {
+            (span!(), Expr::Not(Box::new(rhs)))
+        },
         Let Identifier(var) Equals assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
         },
@@ -71,6 +74,9 @@ parser! {
         }
         U64Literal(i) => {
             (span!(), Expr::U64(i))
+        }
+        BoolLiteral(b) => {
+            (span!(), Expr::Bool(b))
         }
     }
 }

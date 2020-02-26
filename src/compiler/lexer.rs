@@ -3,6 +3,7 @@ use super::ast::Span;
 
 #[ derive(Debug, Clone) ]
 pub enum Token {
+    BoolLiteral(bool),
     I64Literal(i64),
     U64Literal(u64),
     StringLiteral(String),
@@ -12,6 +13,7 @@ pub enum Token {
     Newline,
     Semicolon,
     Plus,
+    Not,
     Return,
     Equals,
     Identifier(String)
@@ -23,6 +25,10 @@ lexer! {
     r"[ \t\r]" => Token::Whitespace,
     r"\n" => Token::Newline,
     "return" => Token::Return,
+    "not" => Token::Not,
+    "!" => Token::Not,
+    "true" => Token::BoolLiteral(true),
+    "false" => Token::BoolLiteral(false),
     "=" => Token::Equals,
     r"\+" => Token::Plus,
     "[0-9]+" => Token::I64Literal(tok.parse().unwrap()),

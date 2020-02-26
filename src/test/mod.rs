@@ -64,3 +64,17 @@ fn cast_to_u64() {
 
     assert_eq!(result, Value::wrap_u64(5));
 }
+
+#[test]
+fn negate_boolean() {
+    let program = compile_string("\
+        let x = false\n\
+        x = not x\n\
+        return x\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::wrap_bool(true));
+}
