@@ -19,7 +19,12 @@ parser! {
     }
 
     statements: Vec<ParseNode> {
-        statements[st] extra extra => {
+        statements[mut st] assign[rhs] extra Semicolon => {
+            st.push(rhs);
+            st
+        },
+        statements[mut st] assign[rhs] extra Newline => {
+            st.push(rhs);
             st
         },
         statements[mut st] assign[rhs] Semicolon => {

@@ -64,7 +64,7 @@ pub fn compile_string(input: &str) -> Program {
                             |    {}", span.lo, span.hi, &input[start..end], msg);
                 }
                 None => {
-                    panic!("Got error: {:?}", e);
+                    panic!("Got compile error: {:?}", e);
                 }
             }
         }
