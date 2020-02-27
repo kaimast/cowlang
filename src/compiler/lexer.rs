@@ -13,7 +13,6 @@ pub enum Token {
     Let,
     Whitespace,
     Newline,
-    Semicolon,
     Plus,
     Not,
     Return,
@@ -52,7 +51,6 @@ lexer! {
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
-    ";" => Token::Semicolon,
     "[a-zA-Z]+" => Token::Identifier(tok.into()),
     "." => panic!("unexpected character"),
 }

@@ -15,32 +15,21 @@ parser! {
     }
 
     program: Program {
-        statements[s] => Program{ stmts: s }
+        linebreak => Program{ stmts: vec!() },
+        statements[st] => Program{ stmts: st }
     }
 
     statements: Vec<ParseNode> {
-        statements[mut st] assign[rhs] extra Semicolon => {
-            st.push(rhs);
-            st
-        },
-        statements[mut st] assign[rhs] extra Newline => {
-            st.push(rhs);
-            st
-        },
-        statements[mut st] assign[rhs] Semicolon => {
-            st.push(rhs);
-            st
-        },
-        statements[mut st] assign[rhs] Newline => {
+        statements[mut st] assign[rhs] linebreak => {
             st.push(rhs);
             st
         },
         => vec![]
     }
 
-    extra: () {
-        Newline => {},
-        Semicolon => {}
+    linebreak: () {
+        linebreak[l] Newline => (),
+        Newline => ()
     }
 
     assign: ParseNode {
