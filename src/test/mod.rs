@@ -84,7 +84,7 @@ fn equals() {
     let program = compile_string("\
         let x = true\n\
         let y = false\n\
-        return x == y\
+        return x == y\n\
     ");
 
     let mut interpreter = Interpreter::default();
@@ -93,18 +93,35 @@ fn equals() {
     assert_eq!(result, Value::wrap_bool(false));
 }
 
-
 #[test]
 fn greater_than() {
     let program = compile_string("\
         let x = 5\n\
-        return x > 3\
+        return x > 3\n\
+        return false #unreachable\
     ");
 
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
     assert_eq!(result, Value::wrap_bool(true));
+}
+
+#[test]
+fn if_statement() {
+    let program = compile_string("\
+    let x = 5\
+    \n\
+    if x > 1:\
+  \n    return x+1\n\
+    \n\
+    return 1\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, Value::wrap_i64(6));
 }
 
 

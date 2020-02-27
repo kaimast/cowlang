@@ -48,6 +48,9 @@ parser! {
         Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
         },
+        If assign[cond] Colon Newline Indent statements[body] Dedent => {
+            (span!(), Expr::If(Box::new(cond), body))
+        }
         term[t] => t
     }
 

@@ -38,6 +38,19 @@ impl Interpreter {
         let (_span, expr) = stmt;
 
         match expr {
+            Expr::If(cond, body) => {
+                if self.step(scope, cond).unwrap().as_bool().unwrap() {
+                    for stmt in body {
+                        let res = self.step(scope, &stmt);
+
+                        if res.is_some() {
+                            return res;
+                        }
+                    }
+                }
+                
+                return None;
+            }
             Expr::AssignNew(var, rhs) => {
                 let val = self.step(scope, rhs).unwrap();
 

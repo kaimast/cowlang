@@ -4,11 +4,13 @@ pub struct Span {
     pub lo: usize
 }
 
+pub type ParseNode = (Span, Expr);
+pub type Statements = Vec<ParseNode>;
+
 pub struct Program {
-    pub stmts: Vec<(Span, Expr)>
+    pub stmts: Statements
 }
 
-pub type ParseNode = (Span, Expr);
 
 pub enum CompareType {
     Equals,
@@ -25,6 +27,7 @@ pub enum Expr {
     Add(Box<ParseNode>, Box<ParseNode>),
     Assign(String, Box<ParseNode>),
     AssignNew(String, Box<ParseNode>),
+    If(Box<ParseNode>, Statements),
     Compare(CompareType, Box<ParseNode>, Box<ParseNode>),
     Return(Box<ParseNode>)
 }

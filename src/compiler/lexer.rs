@@ -22,7 +22,9 @@ pub enum Token {
     Greater,
     Smaller,
     Indent,
-    Dedent
+    Dedent,
+    Colon,
+    If
 }
 
 lexer! {
@@ -33,6 +35,8 @@ lexer! {
     "return" => Token::Return,
     "not" => Token::Not,
     "!" => Token::Not,
+    "if" => Token::If,
+    ":" => Token::Colon,
     "true" => Token::BoolLiteral(true),
     "false" => Token::BoolLiteral(false),
     "=" => Token::Assign,
@@ -72,22 +76,22 @@ impl<'a> Lexer<'a> {
         let mut last_icount = 0;
 
         for (pos, c) in s.chars().enumerate() {
-            if c == '\n' {
-                is_newline = true;
-            }
-
             if c == ' ' && is_newline {
                 current_icount += 1;
             } else if c != ' ' && is_newline {
                 if current_icount < last_icount {
                     indents.insert(pos, false);
+                    last_icount = current_icount;
                 } else if current_icount > last_icount {
                     indents.insert(pos, true);
+                    last_icount = current_icount;
                 }
-                
-                last_icount = current_icount;
-                current_icount = 0;
                 is_newline = false;
+            }
+
+            if c == '\n' {
+                is_newline = true;
+                current_icount = 0;
             }
         }
 
@@ -125,8 +129,6 @@ impl<'a> Iterator for Lexer<'a> {
                 }
             }
 
-            self.position += 1;
-
             let (tok, span) = if let Some((tok, new_remaining)) = take_token(self.remaining) {
                 let lo = self.original.len() - self.remaining.len();
                 let hi = self.original.len() - new_remaining.len();
@@ -151,6 +153,8 @@ impl<'a> Iterator for Lexer<'a> {
                     }
                 }
             };
+
+            self.position = span.hi;
 
             match tok {
                 Token::Whitespace | Token::Comment{0: _} => {
