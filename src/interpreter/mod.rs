@@ -8,22 +8,29 @@ pub use module::Module;
 
 #[ derive(Default) ]
 pub struct Interpreter {
+    root_scope: Scope
 }
 
 struct Scope {
-    variables: HashMap<String, Value>
+    pub modules: HashMap<String, Box<dyn Module>>,
+    pub variables: HashMap<String, Value>
 }
 
-impl Scope {
-    pub fn new() -> Self {
-        return Self{ variables: HashMap::new() };
+impl Default for Scope {
+    pub fn default() -> Self {
+        return Self{
+            modules: HashMap::new(), variables: HashMap::new() };
     }
 }
 
 impl Interpreter {
+    pub fn register_module(&mut self, name: String, module: Box<dyn Module>) {
+        self.root_scope.modules.insert(name, module);
+    }
+
     pub fn run(&mut self, program: &Program) -> Value {
-        let mut scope = Scope::new();
         let mut result = Value::None;
+        let mut scope = &mut self.root_scope;
 
         for stmt in &program.stmts {
             let res = self.step(&mut scope, &stmt);
