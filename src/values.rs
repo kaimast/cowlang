@@ -47,26 +47,6 @@ impl Value {
         return Value::List(Vec::new());
     }
 
-    pub fn wrap_string(content: String) -> Value {
-        return Value::Str(content);
-    }
-
-    pub fn wrap_str(content: &str) -> Value {
-        return Value::Str(String::from(content));
-    }
-
-    pub fn wrap_i64(content: i64) -> Value {
-        return Value::I64(content);
-    }
-
-    pub fn wrap_u64(content: u64) -> Value {
-        return Value::U64(content);
-    }
-
-    pub fn wrap_bool(content: bool) -> Value {
-        return Value::Bool(content);
-    }
-
     pub fn get(&self, key: &str) -> Option<&Value> {
         if key == "" {
             panic!("Got invalid key");
@@ -121,10 +101,10 @@ impl Value {
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
             Value::I64(content) => {
-                return Value::wrap_i64( content + other.as_i64().unwrap());
+                return (content + other.as_i64().unwrap()).into();
             }
             Value::U64(content)  => {
-                return Value::wrap_u64( content + other.as_u64().unwrap());
+                return (content + other.as_u64().unwrap()).into();
             }
 
             _ => { panic!("Type mismatch!"); }
@@ -134,7 +114,7 @@ impl Value {
     pub fn negate(&self) -> Value {
         match &*self {
             Value::Bool(content) => {
-                return Value::wrap_bool(!content);
+                return (!content).into();
             }
             _ => { panic!("Type mismatch!"); }
         }
@@ -290,7 +270,54 @@ impl Value {
 
         }
     }
+}
 
+impl From<&str> for Value {
+    fn from(s: &str) -> Value {
+        return Value::Str(s.to_string());
+    }
+}
+
+impl From<String> for Value {
+    fn from(s: String) -> Value {
+        return Value::Str(s);
+    }
+}
+
+impl From<&i64> for Value {
+    fn from(i: &i64) -> Value {
+        return Value::I64(*i);
+    }
+}
+
+impl From<&u64> for Value {
+    fn from(i: &u64) -> Value {
+        return Value::U64(*i);
+    }
+}
+
+impl From<i64> for Value {
+    fn from(i: i64) -> Value {
+        return Value::I64(i);
+    }
+}
+
+impl From<u64> for Value {
+    fn from(i: u64) -> Value {
+        return Value::U64(i);
+    }
+}
+
+impl From<&bool> for Value {
+    fn from(b: &bool) -> Value {
+        return Value::Bool(*b);
+    }
+}
+
+impl From<bool> for Value {
+    fn from(b: bool) -> Value {
+        return Value::Bool(b);
+    }
 }
 
 #[ cfg(feature="python-bindings") ]
@@ -343,24 +370,24 @@ mod tests
     #[test]
     fn list_append() {
         let mut list = Value::make_list();
-        let res = list.list_append(Value::wrap_str("hi"));
+        let res = list.list_append("hi".into());
 
         assert_eq!(res, Ok(()));
         assert_eq!(list.num_children(), 1);
         assert_eq!(list.list_get_at(0),
-            Some(&Value::wrap_str("hi")));
+            Some(&"hi".into()));
     }
 
     #[test]
     fn map_insert() {
         let mut map = Value::make_map();
-        let res = map.map_insert(String::from("foobar"), Value::wrap_str("hi"));
+        let res = map.map_insert(String::from("foobar"), "hi".into());
         
         assert_eq!(res, Ok(()));
         assert_eq!(map.num_children(), 1);
-        assert_eq!(map.map_get("foobar"), Some(&Value::wrap_str("hi")));
+        assert_eq!(map.map_get("foobar"), Some(&"hi".into()));
 
-        let res2 = map.map_insert(String::from("foobar"), Value::wrap_str("hi"));
+        let res2 = map.map_insert(String::from("foobar"), "hi".into());
  
         assert_eq!(res2, Err(Error::FieldAlreadyExists));
     }

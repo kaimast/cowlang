@@ -28,7 +28,7 @@ parser! {
     }
 
     linebreak: () {
-        linebreak[l] Newline => (),
+        linebreak Newline => (),
         Newline => ()
     }
 

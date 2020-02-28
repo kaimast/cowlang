@@ -3,6 +3,9 @@ use crate::Value;
 
 use std::collections::HashMap;
 
+mod module;
+pub use module::Module;
+
 #[ derive(Default) ]
 pub struct Interpreter {
 }
@@ -96,7 +99,7 @@ impl Interpreter {
                     }
                 };
 
-                return Some(Value::wrap_bool(result));
+                return Some( result.into() );
             }
             Expr::Not(rhs) => {
                 let right = self.step(scope, &rhs).unwrap();
@@ -117,13 +120,13 @@ impl Interpreter {
 
             },
             Expr::Bool(b) => {
-                return Some( Value::wrap_bool(*b) );
+                return Some( b.into() );
             },
             Expr::I64(i) => {
-                return Some( Value::wrap_i64(*i) );
+                return Some( i.into() );
             },
             Expr::U64(i) => {
-                return Some( Value::wrap_u64(*i) );
+                return Some( i.into() );
             },
             Expr::Return(rhs) => {
                 return self.step(scope, &rhs);
