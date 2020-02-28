@@ -4,7 +4,7 @@ struct TestModule {
 }
 
 impl Module for TestModule {
-    fn call(name: &str, args: Vec<Value>) -> Value {
+    fn call(&self, name: &str, args: Vec<Value>) -> Value {
         if name == "get_answer" {
             let result: i64 = 42;
             return result.into();

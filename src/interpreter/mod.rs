@@ -1,6 +1,8 @@
 use crate::compiler::*;
 use crate::Value;
 
+use std::rc::Rc;
+use std::mem;
 use std::collections::HashMap;
 
 mod module;
@@ -8,7 +10,7 @@ pub use module::Module;
 
 #[ derive(Default) ]
 pub struct Interpreter {
-    root_scope: Scope
+    modules: HashMap<String, Box<dyn Module>>,
 }
 
 struct Scope {
@@ -16,26 +18,38 @@ struct Scope {
     pub variables: HashMap<String, Value>
 }
 
-impl Default for Scope {
-    pub fn default() -> Self {
-        return Self{
-            modules: HashMap::new(), variables: HashMap::new() };
+enum Handle {
+    None,
+    Val(Value),
+    Callable(Rc<dyn Module>)
+}
+
+impl Handle {
+    pub fn unwrap_value(self) -> Value {
+        if let Handle::Val(value) = self {
+            return value;
+        } else {
+            panic!("Not a value!");
+        }
     }
 }
 
 impl Interpreter {
     pub fn register_module(&mut self, name: String, module: Box<dyn Module>) {
-        self.root_scope.modules.insert(name, module);
+        self.modules.insert(name, module);
     }
 
     pub fn run(&mut self, program: &Program) -> Value {
         let mut result = Value::None;
-        let mut scope = &mut self.root_scope;
+
+        let modules = mem::take(&mut self.modules);
+        let variables = HashMap::new();
+        let mut root_scope = Scope{ modules, variables };
 
         for stmt in &program.stmts {
-            let res = self.step(&mut scope, &stmt);
+            let res = self.step(&mut root_scope, &stmt);
 
-            if let Some(r) = res {
+            if let Handle::Val(r) = res {
                 result = r;
                 break;
             }
@@ -44,25 +58,25 @@ impl Interpreter {
         return result;
     }
 
-    fn step(&mut self, scope: &mut Scope, stmt: &ParseNode) -> Option<Value> {
+    fn step(&mut self, scope: &mut Scope, stmt: &ParseNode) -> Handle {
         let (_span, expr) = stmt;
 
         match expr {
             Expr::If(cond, body) => {
-                if self.step(scope, cond).unwrap().as_bool().unwrap() {
+                if self.step(scope, cond).unwrap_value().as_bool().unwrap() {
                     for stmt in body {
                         let res = self.step(scope, &stmt);
 
-                        if res.is_some() {
+                        if let Handle::Val(_) = res {
                             return res;
                         }
                     }
                 }
                 
-                return None;
+                return Handle::None;
             }
             Expr::AssignNew(var, rhs) => {
-                let val = self.step(scope, rhs).unwrap();
+                let val = self.step(scope, rhs).unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("let {} = {:?}", var, val);
@@ -72,27 +86,30 @@ impl Interpreter {
                 if result.is_some() {
                     panic!("Variable {} assigned more than once", var);
                 }
-                return None;
+
+                return Handle::None;
             },
             Expr::Var(var) => {
                 let result = scope.variables.get(var);
 
                 match result {
-                    Some(value) => { return Some(value.clone()); }
+                    Some(value) => {
+                        return Handle::Val(value.clone());
+                    }
                     _ => {
                         panic!("No such variable {}", var);
                     }
                 }
             }
             Expr::Add(lhs, rhs) => {
-                let left = self.step(scope, &lhs).unwrap();
-                let right = self.step(scope, &rhs).unwrap();
+                let left = self.step(scope, &lhs).unwrap_value();
+                let right = self.step(scope, &rhs).unwrap_value();
 
-                return Some( left.add(&right) );
+                return Handle::Val( left.add(&right) );
             }
             Expr::Compare(ctype, lhs, rhs) => {
-                let left = self.step(scope, &lhs).unwrap();
-                let right = self.step(scope, &rhs).unwrap();
+                let left = self.step(scope, &lhs).unwrap_value();
+                let right = self.step(scope, &rhs).unwrap_value();
 
                 let result = match ctype {
                     CompareType::Greater => {
@@ -106,14 +123,14 @@ impl Interpreter {
                     }
                 };
 
-                return Some( result.into() );
+                return Handle::Val( result.into() );
             }
             Expr::Not(rhs) => {
-                let right = self.step(scope, &rhs).unwrap();
-                return Some( right.negate() );
+                let right = self.step(scope, &rhs).unwrap_value();
+                return Handle::Val( right.negate() );
             }
             Expr::Assign(var, rhs) => {
-                let val = self.step(scope, rhs).unwrap();
+                let val = self.step(scope, rhs).unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("{} = {:?}", var, val);
@@ -123,17 +140,17 @@ impl Interpreter {
                 if result.is_none() {
                     panic!("Try to assign new value to {}, but did not exist", var);
                 }
-                return None;
+                return Handle::None;
 
             },
             Expr::Bool(b) => {
-                return Some( b.into() );
+                return Handle::Val( b.into());
             },
             Expr::I64(i) => {
-                return Some( i.into() );
+                return Handle::Val( i.into());
             },
             Expr::U64(i) => {
-                return Some( i.into() );
+                return Handle::Val( i.into() );
             },
             Expr::Return(rhs) => {
                 return self.step(scope, &rhs);
