@@ -10,7 +10,7 @@ pub use module::Module;
 
 #[ derive(Default) ]
 pub struct Interpreter {
-    modules: HashMap<String, Box<dyn Module>>,
+    modules: HashMap<String, Rc<dyn Module>>,
 }
 
 struct Scope {
@@ -19,22 +19,18 @@ struct Scope {
 }
 
 impl Scope {
-    pub fn get(name: &str) -> Handle {
-        if let Some(m) = modules.get(name) {
+    pub fn get(&self, name: &str) -> Handle {
+        if let Some(m) = self.modules.get(name) {
             return Handle::Callable(m.clone());
-        } else if let Some(v) = variables.get(name) {
+        } else if let Some(v) = self.variables.get(name) {
             return Handle::Val(v.clone());
         } else {
             panic!("No such value or module '{}'!", name);
         }
     }
 
-    pub fn add_module(&mut self, name: String, module: Rc<dyn Module>) {
-        self.modules.insert(name, module);
-    }
-
     pub fn create_variable(&mut self, name: String, val: Value) {
-        if res = self.variables.insert(name, val);
+        let res = self.variables.insert(name, val);
 
         if res.is_some() {
             panic!("Variable already existed!");
@@ -42,7 +38,7 @@ impl Scope {
     }
 
     pub fn update_variable(&mut self, name: String, val: Value) {
-        if res = self.variables.insert(name, val);
+        let res = self.variables.insert(name, val);
 
         if res.is_none() {
             panic!("Cannot update value. Variable did not exist");
@@ -67,7 +63,7 @@ impl Handle {
 }
 
 impl Interpreter {
-    pub fn register_module(&mut self, name: String, module: Box<dyn Module>) {
+    pub fn register_module(&mut self, name: String, module: Rc<dyn Module>) {
         self.modules.insert(name, module);
     }
 
@@ -119,13 +115,10 @@ impl Interpreter {
             Expr::Var(var) => {
                 let result = scope.get(var);
 
-                match result {
-                    Some(value) => {
-                        return Handle::Val(value.clone());
-                    }
-                    _ => {
-                        panic!("No such variable {}", var);
-                    }
+                if let Handle::Val(_) = result {
+                    return result;
+                } else {
+                    panic!("No such variable {}", var);
                 }
             }
             Expr::Add(lhs, rhs) => {
@@ -162,7 +155,7 @@ impl Interpreter {
                 #[ cfg(feature="verbose") ]
                 println!("{} = {:?}", var, val);
 
-                scope.update_variable(var, val);
+                scope.update_variable(var.clone(), val);
                 return Handle::None;
 
             },
