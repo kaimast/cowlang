@@ -14,8 +14,40 @@ pub struct Interpreter {
 }
 
 struct Scope {
-    pub modules: HashMap<String, Box<dyn Module>>,
-    pub variables: HashMap<String, Value>
+    modules: HashMap<String, Rc<dyn Module>>,
+    variables: HashMap<String, Value>
+}
+
+impl Scope {
+    pub fn get(name: &str) -> Handle {
+        if let Some(m) = modules.get(name) {
+            return Handle::Callable(m.clone());
+        } else if let Some(v) = variables.get(name) {
+            return Handle::Val(v.clone());
+        } else {
+            panic!("No such value or module '{}'!", name);
+        }
+    }
+
+    pub fn add_module(&mut self, name: String, module: Rc<dyn Module>) {
+        self.modules.insert(name, module);
+    }
+
+    pub fn create_variable(&mut self, name: String, val: Value) {
+        if res = self.variables.insert(name, val);
+
+        if res.is_some() {
+            panic!("Variable already existed!");
+        }
+    }
+
+    pub fn update_variable(&mut self, name: String, val: Value) {
+        if res = self.variables.insert(name, val);
+
+        if res.is_none() {
+            panic!("Cannot update value. Variable did not exist");
+        }
+    }
 }
 
 enum Handle {
@@ -81,16 +113,11 @@ impl Interpreter {
                 #[ cfg(feature="verbose") ]
                 println!("let {} = {:?}", var, val);
 
-                let result = scope.variables.insert(var.clone(), val);
-
-                if result.is_some() {
-                    panic!("Variable {} assigned more than once", var);
-                }
-
+                scope.create_variable(var.clone(), val);
                 return Handle::None;
             },
             Expr::Var(var) => {
-                let result = scope.variables.get(var);
+                let result = scope.get(var);
 
                 match result {
                     Some(value) => {
@@ -135,11 +162,7 @@ impl Interpreter {
                 #[ cfg(feature="verbose") ]
                 println!("{} = {:?}", var, val);
 
-                let result = scope.variables.insert(var.clone(), val);
-
-                if result.is_none() {
-                    panic!("Try to assign new value to {}, but did not exist", var);
-                }
+                scope.update_variable(var, val);
                 return Handle::None;
 
             },
