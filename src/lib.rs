@@ -1,7 +1,7 @@
 #![feature(map_first_last)]
 
 mod values;
-pub use values::{Value, ValueType};
+pub use values::*;
 
 mod error;
 pub use error::Error;
