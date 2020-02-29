@@ -159,6 +159,12 @@ impl Interpreter {
                 return Handle::None;
 
             },
+            Expr::GetMember(rhs, name) => {
+                return Handle::None;
+            },
+            Expr::Call(callee) => {
+                return Handle::None;
+            }
             Expr::Bool(b) => {
                 return Handle::Val( b.into());
             },

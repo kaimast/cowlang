@@ -52,6 +52,12 @@ parser! {
         Not fact[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
         },
+        term[lhs] Period Identifier(var) => {
+            (span!(), Expr::GetMember(Box::new(lhs), var))
+        }
+        term[callee] OpenBracket CloseBracket => {
+            (span!(), Expr::Call(Box::new(callee)))
+        }
         term[lhs] Equals fact[rhs] => {
             (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
         },
