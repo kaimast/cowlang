@@ -11,6 +11,14 @@ impl Module for TestModule {
         if name == "get_answer" {
             let result: i64 = 42;
             return result.into();
+        } else if name == "add_two" {
+            if args.len() != 1 {
+                panic!("Invalid number of argument!");
+            }
+
+            let result = args[0].as_i64().unwrap() + 2;
+            return result.into();
+
         } else {
             panic!("Unexpected function call: {}", name);
         }
@@ -31,5 +39,22 @@ fn get_constant() {
     let result = interpreter.run(&program);
 
     let expected: i64 = 42;
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn add_two() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    return mymodule.add_two(4005)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("mymodule"), module);
+
+    let result = interpreter.run(&program);
+
+    let expected: i64 = 4007;
     assert_eq!(result, expected.into());
 }

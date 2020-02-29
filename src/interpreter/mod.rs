@@ -18,12 +18,33 @@ struct Scope {
     variables: HashMap<String, Value>
 }
 
+trait Callable {
+    fn call(&self, args: Vec<Value>) -> Value;
+}
+
+struct ModuleCallable {
+    module: Rc<dyn Module>,
+    name: String
+}
+
+impl ModuleCallable {
+    pub fn new(module: Rc<dyn Module>, name: String) -> Self {
+        return Self{module, name};
+    }
+}
+
+impl Callable for ModuleCallable {
+    fn call(&self, args: Vec<Value>) -> Value {
+        return self.module.call(&self.name, args);
+    }
+}
+
 impl Scope {
     pub fn get(&self, name: &str) -> Handle {
         if let Some(m) = self.modules.get(name) {
-            return Handle::Callable(m.clone());
+            return Handle::Object(m.clone());
         } else if let Some(v) = self.variables.get(name) {
-            return Handle::Val(v.clone());
+            return Handle::Value(v.clone());
         } else {
             panic!("No such value or module '{}'!", name);
         }
@@ -48,13 +69,14 @@ impl Scope {
 
 enum Handle {
     None,
-    Val(Value),
-    Callable(Rc<dyn Module>)
+    Value(Value),
+    Object(Rc<dyn Module>),
+    Callable(Box<dyn Callable>)
 }
 
 impl Handle {
     pub fn unwrap_value(self) -> Value {
-        if let Handle::Val(value) = self {
+        if let Handle::Value(value) = self {
             return value;
         } else {
             panic!("Not a value!");
@@ -77,7 +99,7 @@ impl Interpreter {
         for stmt in &program.stmts {
             let res = self.step(&mut root_scope, &stmt);
 
-            if let Handle::Val(r) = res {
+            if let Handle::Value(r) = res {
                 result = r;
                 break;
             }
@@ -95,7 +117,7 @@ impl Interpreter {
                     for stmt in body {
                         let res = self.step(scope, &stmt);
 
-                        if let Handle::Val(_) = res {
+                        if let Handle::Value(_) = res {
                             return res;
                         }
                     }
@@ -113,19 +135,13 @@ impl Interpreter {
                 return Handle::None;
             },
             Expr::Var(var) => {
-                let result = scope.get(var);
-
-                if let Handle::Val(_) = result {
-                    return result;
-                } else {
-                    panic!("No such variable {}", var);
-                }
+                return scope.get(var);
             }
             Expr::Add(lhs, rhs) => {
                 let left = self.step(scope, &lhs).unwrap_value();
                 let right = self.step(scope, &rhs).unwrap_value();
 
-                return Handle::Val( left.add(&right) );
+                return Handle::Value( left.add(&right) );
             }
             Expr::Compare(ctype, lhs, rhs) => {
                 let left = self.step(scope, &lhs).unwrap_value();
@@ -143,11 +159,11 @@ impl Interpreter {
                     }
                 };
 
-                return Handle::Val( result.into() );
+                return Handle::Value( result.into() );
             }
             Expr::Not(rhs) => {
                 let right = self.step(scope, &rhs).unwrap_value();
-                return Handle::Val( right.negate() );
+                return Handle::Value( right.negate() );
             }
             Expr::Assign(var, rhs) => {
                 let val = self.step(scope, rhs).unwrap_value();
@@ -160,19 +176,42 @@ impl Interpreter {
 
             },
             Expr::GetMember(rhs, name) => {
-                return Handle::None;
+                let res = self.step(scope, rhs);
+
+                if let Handle::Object(m) = res {
+                    return Handle::Callable(Box::new(
+                            ModuleCallable::new(m.clone(), name.clone())
+                        ));
+                } else {
+                    panic!("Cannot get member: not an object");
+                }
             },
-            Expr::Call(callee) => {
-                return Handle::None;
+            Expr::Call(callee, args) => {
+                let res = self.step(scope, callee);
+                let mut argv = Vec::new();
+
+                for arg in args {
+                    if let Handle::Value(v) = self.step(scope, arg) {
+                        argv.push(v);
+                    } else {
+                        panic!("Argument is not a value!");
+                    }
+                }
+
+                if let Handle::Callable(c) = res {
+                    return Handle::Value(c.call(argv));
+                } else {
+                    panic!("Not a callable!");
+                }
             }
             Expr::Bool(b) => {
-                return Handle::Val( b.into());
+                return Handle::Value( b.into());
             },
             Expr::I64(i) => {
-                return Handle::Val( i.into());
+                return Handle::Value( i.into());
             },
             Expr::U64(i) => {
-                return Handle::Val( i.into() );
+                return Handle::Value( i.into() );
             },
             Expr::Return(rhs) => {
                 return self.step(scope, &rhs);

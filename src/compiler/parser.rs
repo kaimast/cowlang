@@ -55,8 +55,8 @@ parser! {
         term[lhs] Period Identifier(var) => {
             (span!(), Expr::GetMember(Box::new(lhs), var))
         }
-        term[callee] OpenBracket CloseBracket => {
-            (span!(), Expr::Call(Box::new(callee)))
+        term[callee] OpenBracket args[a] CloseBracket => {
+            (span!(), Expr::Call(Box::new(callee), a))
         }
         term[lhs] Equals fact[rhs] => {
             (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
@@ -71,6 +71,17 @@ parser! {
             (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
         }
         fact[x] => x
+    }
+
+    args: Vec<ParseNode> {
+        args[mut args] Comma term[t] => {
+            args.push(t);
+            args
+        },
+        term[t] => {
+            vec!(t)
+        },
+        => vec![]
     }
 
     fact: ParseNode {

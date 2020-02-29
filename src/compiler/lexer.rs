@@ -1,6 +1,7 @@
 use plex::lexer;
 use super::ast::Span;
 use std::collections::BTreeMap;
+use std::cmp::Ordering;
 
 #[ derive(Debug, Clone) ]
 pub enum Token {
@@ -18,6 +19,7 @@ pub enum Token {
     Newline,
     Plus,
     Not,
+    Comma,
     Return,
     Assign,
     Equals,
@@ -44,6 +46,7 @@ lexer! {
     "=" => Token::Assign,
     "==" => Token::Equals,
     r"\." => Token::Period,
+    r"," => Token::Comma,
     r"\(" => Token::OpenBracket,
     r"\)" => Token::CloseBracket,
     r"\+" => Token::Plus,
@@ -83,12 +86,16 @@ impl<'a> Lexer<'a> {
             if c == ' ' && is_newline {
                 current_icount += 1;
             } else if c != ' ' && is_newline {
-                if current_icount < last_icount {
-                    indents.insert(pos, false);
-                    last_icount = current_icount;
-                } else if current_icount > last_icount {
-                    indents.insert(pos, true);
-                    last_icount = current_icount;
+                match current_icount.cmp(&last_icount) {
+                    Ordering::Less => {
+                        indents.insert(pos, false);
+                        last_icount = current_icount;
+                    }
+                    Ordering::Greater => {
+                        indents.insert(pos, true);
+                        last_icount = current_icount;
+                    }
+                    _ => {}
                 }
                 is_newline = false;
             }
@@ -116,20 +123,23 @@ impl<'a> Iterator for Lexer<'a> {
             if let Some(entry) = self.indents.first_entry() {
                 let ipos = *entry.key();
 
-                if ipos == self.position {
-                    let is_indent = *entry.get();
-                    let span = Span{ lo: ipos, hi: ipos };
+                match ipos.cmp(&self.position) {
+                    Ordering::Equal => {
+                        let is_indent = *entry.get();
+                        let span = Span{ lo: ipos, hi: ipos };
 
-                    entry.remove_entry();
+                        entry.remove_entry();
 
-                    if is_indent {
-                        return Some((Token::Indent, span));
-                    } else {
-                        return Some((Token::Dedent, span));
+                        if is_indent {
+                            return Some((Token::Indent, span));
+                        } else {
+                            return Some((Token::Dedent, span));
+                        }
                     }
-
-                } else if ipos < self.position {
-                    panic!("invalid state!");
+                    Ordering::Less => {
+                        panic!("invalid state!");
+                    }
+                    _ => {}
                 }
             }
 
