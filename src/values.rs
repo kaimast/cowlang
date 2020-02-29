@@ -325,7 +325,7 @@ impl FromPyObject<'_> for Value {
     fn extract(obj: &PyAny) -> PyResult<Self> {
         match obj.downcast_ref::<PyString>() {
             Ok(string) => {
-                return Ok( Value::String( PyString::extract(string).unwrap() ));
+                return Ok( Value::Str( PyString::extract(string).unwrap() ));
             }
             _ => {}
         }
@@ -342,7 +342,7 @@ impl IntoPy<PyObject> for Value {
             Value::None => {
                 return py.None();
             }
-            Value::String(s) => {
+            Value::Str(s) => {
                 return s.into_py(py);
             }
             Value::Bool(b) => {
