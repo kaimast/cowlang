@@ -1,5 +1,8 @@
 use crate::{Interpreter, compile_string, Module, Value};
 
+use std::rc::Rc;
+
+#[derive(Default)]
 struct TestModule {
 }
 
@@ -16,11 +19,15 @@ impl Module for TestModule {
 
 #[test]
 fn get_constant() {
+    let module = Rc::new(TestModule::default());
+
     let program = compile_string("\
     return test_module.get_answer()\n\
     ");
 
     let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("test_module"), module);
+
     let result = interpreter.run(&program);
 
     let expected: i64 = 42;

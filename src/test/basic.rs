@@ -40,9 +40,9 @@ fn compile_empty() {
 #[test]
 fn return_integer() {
     let program = compile_string("\
-        let x = 1\n\
-        x = x+4\n\
-        return x\
+        let _ = 1\n\
+        _ = _+4\n\
+        return _\
     ");
 
     let mut interpreter = Interpreter::default();

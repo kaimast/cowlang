@@ -11,6 +11,9 @@ pub enum Token {
     Comment(String),
     Identifier(String),
     Let,
+    Period,
+    OpenBracket,
+    CloseBracket,
     Whitespace,
     Newline,
     Plus,
@@ -40,6 +43,9 @@ lexer! {
     "false" => Token::BoolLiteral(false),
     "=" => Token::Assign,
     "==" => Token::Equals,
+    r"\." => Token::Period,
+    r"\(" => Token::OpenBracket,
+    r"\)" => Token::CloseBracket,
     r"\+" => Token::Plus,
     "<" => Token::Smaller,
     ">" => Token::Greater,
@@ -51,7 +57,7 @@ lexer! {
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
-    "[a-zA-Z]+" => Token::Identifier(tok.into()),
+    r#"[a-zA-Z_][a-zA-Z0-9_]*"# => Token::Identifier(tok.into()),
     "." => panic!("unexpected character"),
 }
 
