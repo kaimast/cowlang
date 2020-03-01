@@ -11,7 +11,7 @@ use pyo3::exceptions as pyexceptions;
 use pyo3::{PyResult, FromPyObject, PyErr, IntoPy};
 
 #[ cfg(feature="python-bindings") ]
-use pyo3::types::{PyAny, PyString};
+use pyo3::types::*;
 
 use crate::error::Error;
 
@@ -329,6 +329,42 @@ impl FromPyObject<'_> for Value {
         match obj.downcast_ref::<PyString>() {
             Ok(string) => {
                 return Ok( Value::Str( PyString::extract(string).unwrap() ));
+            }
+            _ => {}
+        }
+        
+        match obj.downcast_ref::<PyList>() {
+            Ok(list) => {
+                let mut result = Value::make_list();
+
+                for elem in list {
+                    let child;
+
+                    match elem.extract() {
+                        Ok(c) => { child = c; }
+                        Err(e) => { return Err(e); }
+                    }
+
+                    result.list_append(child).unwrap();
+                }
+
+                return Ok( result);
+            }
+            _ => {}
+        }
+
+        match obj.downcast_ref::<PyLong>() {
+            Ok(pyint) => {
+                let i: i64 = PyLong::extract(pyint).unwrap();
+                return Ok( i.into() );
+            }
+            _ => {}
+        }
+
+        match obj.downcast_ref::<PyInt>() {
+            Ok(pyint) => {
+                let i: i64 = PyInt::extract(pyint).unwrap();
+                return Ok( i.into() );
             }
             _ => {}
         }
