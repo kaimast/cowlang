@@ -5,6 +5,9 @@ use serde::{Serialize, Deserialize};
 use pyo3::prelude::*;
 
 #[ cfg(feature="python-bindings") ]
+use pyo3::exceptions as pyexceptions;
+
+#[ cfg(feature="python-bindings") ]
 use pyo3::{PyResult, FromPyObject, PyErr, IntoPy};
 
 #[ cfg(feature="python-bindings") ]
@@ -330,8 +333,8 @@ impl FromPyObject<'_> for Value {
             _ => {}
         }
 
-        // No suitable conversion found
-        return Err( PyErr::from_instance(obj) );
+        let err = PyErr::new::<pyexceptions::TypeError, _>("Failed to convert PyObject to Value");
+        return Err(err);
     }
 }
 
