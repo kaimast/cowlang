@@ -355,7 +355,7 @@ impl FromPyObject<'_> for Value {
 
         match obj.downcast_ref::<PyLong>() {
             Ok(pyint) => {
-                let i: i64 = PyLong::extract(pyint).unwrap();
+                let i: i64 = pyint.extract()?;
                 return Ok( i.into() );
             }
             _ => {}
@@ -363,7 +363,7 @@ impl FromPyObject<'_> for Value {
 
         match obj.downcast_ref::<PyInt>() {
             Ok(pyint) => {
-                let i: i64 = PyInt::extract(pyint).unwrap();
+                let i: i64 = pyint.extract()?;
                 return Ok( i.into() );
             }
             _ => {}
