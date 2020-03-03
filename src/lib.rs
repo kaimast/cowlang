@@ -7,7 +7,7 @@ mod error;
 pub use error::Error;
 
 mod compiler;
-pub use compiler::compile_string;
+pub use compiler::*;
 
 mod interpreter;
 pub use interpreter::*;
