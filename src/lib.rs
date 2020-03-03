@@ -10,7 +10,7 @@ mod compiler;
 pub use compiler::compile_string;
 
 mod interpreter;
-pub use interpreter::{Interpreter, Module};
+pub use interpreter::*;
 
 #[cfg(test)]
 mod test;
