@@ -1,4 +1,6 @@
-#[ derive(Debug, Clone, Copy) ]
+use serde::{Serialize, Deserialize};
+
+#[ derive(Debug, Clone, Copy, Serialize, Deserialize) ]
 pub struct Span {
     pub hi: usize,
     pub lo: usize
@@ -7,16 +9,19 @@ pub struct Span {
 pub type ParseNode = (Span, Expr);
 pub type Statements = Vec<ParseNode>;
 
+#[ derive(Debug, Clone, Serialize, Deserialize) ]
 pub struct Program {
     pub stmts: Statements
 }
 
+#[ derive(Debug, Clone, Serialize, Deserialize) ]
 pub enum CompareType {
     Equals,
     Greater,
     Smaller
 }
 
+#[ derive(Debug, Clone, Serialize, Deserialize) ]
 pub enum Expr {
     Var(String),
     I64(i64),
