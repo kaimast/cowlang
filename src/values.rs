@@ -15,7 +15,7 @@ use pyo3::types::*;
 
 use crate::error::Error;
 
-#[ derive(Serialize, Deserialize, Copy, Clone, Debug) ]
+#[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
 pub enum ValueType {
     None,
     Bool,
