@@ -11,6 +11,7 @@ pub use module::Module;
 #[ derive(Default) ]
 pub struct Interpreter {
     modules: HashMap<String, Rc<dyn Module>>,
+    variables: HashMap<String, Value>
 }
 
 struct Scope {
@@ -89,11 +90,16 @@ impl Interpreter {
         self.modules.insert(name, module);
     }
 
+    pub fn set_value(&mut self, name: String, value: Value) {
+        self.variables.insert(name, value);
+    }
+
     pub fn run(&mut self, program: &Program) -> Value {
         let mut result = Value::None;
 
         let modules = mem::take(&mut self.modules);
-        let variables = HashMap::new();
+        let variables = mem::take(&mut self.variables);
+
         let mut root_scope = Scope{ modules, variables };
 
         for stmt in &program.stmts {

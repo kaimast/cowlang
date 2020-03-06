@@ -58,3 +58,18 @@ fn add_two() {
     let expected: i64 = 4007;
     assert_eq!(result, expected.into());
 }
+
+#[test]
+fn set_value() {
+    let program = compile_string("\
+    return my_value\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.set_value(String::from("my_value"), (42 as i64).into());
+
+    let expected : Value = (42 as i64).into();
+    let result = interpreter.run(&program);
+
+    assert_eq!(expected, result);
+}
