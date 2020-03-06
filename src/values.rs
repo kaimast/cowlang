@@ -88,7 +88,6 @@ impl Value {
         }
     }
 
-
     pub fn is_smaller_than(&self, other: &Value) -> bool {
         match &*self {
             Value::I64(content) => {
@@ -209,6 +208,17 @@ impl Value {
                 panic!("Type mismatch!");
             }
         } 
+    }
+
+    pub fn into_map(self) -> Option<HashMap<String, Value>> {
+        match self {
+            Value::Map(content) => {
+                return Some(content);
+            }
+            _ => {
+                panic!("Type mismatch!");
+            }
+        }
     }
 
     pub fn list_get_at(&self, position: usize) -> Option<&Value> {
