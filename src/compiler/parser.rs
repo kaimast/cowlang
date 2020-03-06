@@ -1,6 +1,8 @@
 use super::lexer::Token::*;
 use super::lexer::Token;
 use super::ast::*;
+
+use std::collections::HashMap;
 use plex::parser;
 
 parser! {
@@ -58,6 +60,9 @@ parser! {
         term[callee] OpenBracket args[a] CloseBracket => {
             (span!(), Expr::Call(Box::new(callee), a))
         }
+        term[callee] OpenSquareBracket StringLiteral(id) CloseSquareBracket => {
+            (span!(), Expr::GetElement(Box::new(callee), id))
+        }
         term[lhs] Equals fact[rhs] => {
             (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
         },
@@ -77,15 +82,31 @@ parser! {
         args[mut args] Comma term[t] => {
             args.push(t);
             args
-        },
+        }
         term[t] => {
             vec!(t)
-        },
+        }
         => vec![]
     }
 
     fact: ParseNode {
+        OpenCurlyBracket kvs[m] CloseCurlyBracket => {
+            (span!(), Expr::Dictionary(m))
+        }
         atom[x] => x
+    }
+
+    kvs: HashMap<String, ParseNode> {
+        kvs[mut m] Comma StringLiteral(id) Colon atom[a] => {
+            m.insert(id, a);
+            m
+        }
+        StringLiteral(id) Colon atom[a] => {
+            let mut m = HashMap::new();
+            m.insert(id, a);
+            m
+        }
+        => { HashMap::new() }
     }
 
     atom: ParseNode {

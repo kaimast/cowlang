@@ -96,6 +96,19 @@ fn equals() {
 }
 
 #[test]
+fn dictionary() {
+    let program = compile_string("\
+        let x = { \"a\": 2, \"b\": 5 }\n\
+        return x[\"b\"] > 3\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, true.into());
+}
+
+#[test]
 fn greater_than() {
     let program = compile_string("\
         let x = 5\n\

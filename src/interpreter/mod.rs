@@ -204,15 +204,29 @@ impl Interpreter {
                     panic!("Not a callable!");
                 }
             }
+            Expr::GetElement(callee, key) => {
+                let res = self.step(scope, callee).unwrap_value();
+                return Handle::Value(res.map_get(key).unwrap().clone());
+            }
+            Expr::Dictionary(kvs) => {
+                let mut res = Value::make_map();
+
+                for (k, v) in kvs {
+                    let elem = self.step(scope, v).unwrap_value();
+                    res.map_insert(k.clone(), elem).unwrap();
+                }
+
+                return Handle::Value(res);
+            }
             Expr::Bool(b) => {
                 return Handle::Value( b.into());
-            },
+            }
             Expr::I64(i) => {
                 return Handle::Value( i.into());
-            },
+            }
             Expr::U64(i) => {
                 return Handle::Value( i.into() );
-            },
+            }
             Expr::Return(rhs) => {
                 return self.step(scope, &rhs);
             }
