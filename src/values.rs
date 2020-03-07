@@ -212,12 +212,15 @@ impl Value {
 
     pub fn into_map(self) -> Option<HashMap<String, Value>> {
         match self {
-            Value::Map(content) => {
-                return Some(content);
-            }
-            _ => {
-                panic!("Type mismatch!");
-            }
+            Value::Map(content) => { Some(content) }
+            _ => { None }
+        }
+    }
+
+    pub fn into_vec(self) -> Option<Vec<Value>> {
+        match self {
+            Value::List(content) => { Some(content) }
+            _ => { None }
         }
     }
 
