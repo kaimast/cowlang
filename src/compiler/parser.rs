@@ -53,7 +53,7 @@ parser! {
     }
 
     term: ParseNode {
-        Not fact[rhs] => {
+        Not atom[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
         },
         term[lhs] Period Identifier(var) => {
@@ -65,19 +65,19 @@ parser! {
         term[callee] OpenSquareBracket StringLiteral(id) CloseSquareBracket => {
             (span!(), Expr::GetElement(Box::new(callee), id))
         }
-        term[lhs] Equals fact[rhs] => {
+        term[lhs] Equals atom[rhs] => {
             (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
         },
-        term[lhs] Plus fact[rhs] => {
+        term[lhs] Plus atom[rhs] => {
             (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
         },
-        term[lhs] Greater fact[rhs] => {
+        term[lhs] Greater atom[rhs] => {
             (span!(), Expr::Compare(CompareType::Greater, Box::new(lhs), Box::new(rhs)))
         }
-        term[lhs] Smaller fact[rhs] => {
+        term[lhs] Smaller atom[rhs] => {
             (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
         }
-        fact[x] => x
+        atom[x] => x
     }
 
     args: Vec<ParseNode> {
@@ -89,13 +89,6 @@ parser! {
             vec!(t)
         }
         => vec![]
-    }
-
-    fact: ParseNode {
-        OpenCurlyBracket kvs[m] CloseCurlyBracket => {
-            (span!(), Expr::Dictionary(m))
-        }
-        atom[x] => x
     }
 
     kvs: HashMap<String, ParseNode> {
@@ -129,6 +122,9 @@ parser! {
         }
         OpenSquareBracket list_vals[v] CloseSquareBracket => {
             (span!(), Expr::List(v))
+        }
+        OpenCurlyBracket kvs[m] CloseCurlyBracket => {
+            (span!(), Expr::Dictionary(m))
         }
     }
 
