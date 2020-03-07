@@ -1,5 +1,5 @@
 use std::collections::{HashMap};
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use serde::{Serialize, Deserialize};
 
@@ -221,10 +221,10 @@ impl Value {
         }
     }
 
-    pub fn into_vec(self) -> Option<Vec<Value>> {
+    pub fn into_vec(self) -> Result<Vec<Value>, ()> {
         match self {
-            Value::List(content) => { Some(content) }
-            _ => { None }
+            Value::List(content) => { Ok(content) }
+            _ => { Err(()) }
         }
     }
 
@@ -288,7 +288,24 @@ impl<T> From<Vec<T>> for Value where T: Into<Value> {
         res
     }
 }
-    
+
+impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
+    type Error = ();
+
+    fn try_into(self) -> Result<Vec<T>, ()> {
+        let mut res = Vec::new();
+
+        for val in self.into_vec()?.drain(..) {
+            match val.try_into() {
+                Ok(v) => { res.push(v) }
+                Err(_) => { panic!("Type error!"); }
+            }
+        }
+
+        Ok(res)
+    }
+}
+
 impl TryInto<i64> for Value {
     type Error = ();
 
