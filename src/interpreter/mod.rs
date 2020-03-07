@@ -224,6 +224,9 @@ impl Interpreter {
 
                 return Handle::Value(res);
             }
+            Expr::String(s) => {
+                return Handle::Value( s.clone().into() );
+            }
             Expr::Bool(b) => {
                 return Handle::Value( b.into());
             }

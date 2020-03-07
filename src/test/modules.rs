@@ -11,6 +11,8 @@ impl Module for TestModule {
         if name == "get_answer" {
             let result: i64 = 42;
             return result.into();
+        } else if name == "pass_string" {
+            return args[0].as_string().unwrap().into();
         } else if name == "add_two" {
             if args.len() != 1 {
                 panic!("Invalid number of argument!");
@@ -59,6 +61,22 @@ fn add_two() {
     assert_eq!(result, expected.into());
 }
 
+#[test]
+fn pass_string() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    return mymodule.pass_string(\"yolo\")\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("mymodule"), module);
+
+    let expected : Value = String::from("yolo").into();
+    let result = interpreter.run(&program);
+
+    assert_eq!(expected, result);
+}
 #[test]
 fn set_value() {
     let program = compile_string("\

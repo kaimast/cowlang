@@ -124,6 +124,9 @@ parser! {
         BoolLiteral(b) => {
             (span!(), Expr::Bool(b))
         }
+        StringLiteral(s) => {
+            (span!(), Expr::String(s))
+        }
     }
 }
 

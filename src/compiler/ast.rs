@@ -28,6 +28,7 @@ pub enum Expr {
     I64(i64),
     U64(u64),
     Bool(bool),
+    String(String),
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
     Add(Box<ParseNode>, Box<ParseNode>),
