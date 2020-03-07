@@ -46,7 +46,7 @@ fn get_constant() {
 fn add_two() {
     let module = Rc::new(TestModule::default());
 
-    let program = compile_string("\
+    let program = compile_string("\n\
     return mymodule.add_two(4005)\n\
     ");
 

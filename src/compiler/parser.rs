@@ -29,6 +29,8 @@ parser! {
         => vec![]
     }
 
+    // extra empty lines should already have been removed
+    // by the lexer, but just in case...
     linebreak: () {
         linebreak Newline => (),
         Newline => ()

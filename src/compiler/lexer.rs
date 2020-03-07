@@ -78,6 +78,7 @@ pub struct Lexer<'a> {
     remaining: &'a str,
     at_start: bool,
     at_end: bool,
+    empty_line: bool,
 
     indents: BTreeMap<usize, bool>,
     position: usize
@@ -117,9 +118,10 @@ impl<'a> Lexer<'a> {
         let position = 0;
         let at_start = true;
         let at_end = false;
+        let empty_line = true;
 
         Self{original: s, remaining: s, indents,
-            position, at_start, at_end }
+            position, at_start, at_end, empty_line}
     }
 }
 
@@ -137,6 +139,7 @@ impl<'a> Iterator for Lexer<'a> {
                         let span = Span{ lo: ipos, hi: ipos };
 
                         entry.remove_entry();
+                        self.empty_line = false;
 
                         if is_indent {
                             return Some((Token::Indent, span));
@@ -182,8 +185,18 @@ impl<'a> Iterator for Lexer<'a> {
                 Token::Whitespace | Token::Comment{0: _} => {
                     continue;
                 }
+                // ignore empty lines
+                Token::Newline => {
+                    if self.empty_line {
+                        continue; 
+                    } else {
+                        self.empty_line = true;
+                        return Some((tok, span));
+                    }
+                }
                 tok => {
                     self.at_start = false;
+                    self.empty_line = false;
                     return Some((tok, span));
                 }
             }
