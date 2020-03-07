@@ -227,6 +227,18 @@ impl Interpreter {
             Expr::String(s) => {
                 return Handle::Value( s.clone().into() );
             }
+            Expr::List(elems) => {
+                let mut result = Value::make_list();
+
+                for e in elems {
+                    let elem = self.step(scope, e).unwrap_value();
+
+                    result.list_append(elem).unwrap();
+                }
+
+                return Handle::Value(result);
+
+            }
             Expr::Bool(b) => {
                 return Handle::Value( b.into());
             }

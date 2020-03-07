@@ -1,4 +1,6 @@
 use std::collections::{HashMap};
+use std::convert::TryInto;
+
 use serde::{Serialize, Deserialize};
 
 #[ cfg(feature="python-bindings") ]
@@ -64,10 +66,10 @@ impl Value {
     pub fn is_greater_than(&self, other: &Value) -> bool {
         match &*self {
             Value::I64(content) => {
-                content > &other.as_i64().unwrap()
+                content > &other.clone().try_into().unwrap()
             }
             Value::U64(content)  => {
-                content > &other.as_u64().unwrap()
+                content > &other.clone().try_into().unwrap()
             }
             _ => { panic!("Type mismatch!"); }
         }
@@ -76,10 +78,10 @@ impl Value {
     pub fn equals(&self, other: &Value) -> bool {
         match &*self {
             Value::I64(content) => {
-                content == &other.as_i64().unwrap()
+                content == &other.clone().try_into().unwrap()
             }
             Value::U64(content)  => {
-                content == &other.as_u64().unwrap()
+                content == &other.clone().try_into().unwrap()
             }
             Value::Bool(content) => {
                 content == &other.as_bool().unwrap()
@@ -91,10 +93,10 @@ impl Value {
     pub fn is_smaller_than(&self, other: &Value) -> bool {
         match &*self {
             Value::I64(content) => {
-                content < &other.as_i64().unwrap()
+                content < &other.clone().try_into().unwrap()
             }
             Value::U64(content)  => {
-                content < &other.as_u64().unwrap()
+                content < &other.clone().try_into().unwrap()
             }
             _ => { panic!("Type mismatch!"); }
         }
@@ -103,10 +105,12 @@ impl Value {
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
             Value::I64(content) => {
-                return (content + other.as_i64().unwrap()).into();
+                let val: i64 = other.clone().try_into().unwrap();
+                return (content + val).into();
             }
             Value::U64(content)  => {
-                return (content + other.as_u64().unwrap()).into();
+                let val: u64 = other.clone().try_into().unwrap();
+                return (content + val).into();
             }
 
             _ => { panic!("Type mismatch!"); }
@@ -248,14 +252,6 @@ impl Value {
         }
     }
 
-    /// Convert this value into a string (if possible)
-    pub fn as_string(&self) -> Option<String> {
-        match &self {
-            Value::Str(content) => { return Some(content.to_string()); }
-            _ => { return None; }
-        }
-    }
-
     /// Convert this value into a boolean (if possible)
     pub fn as_bool(&self) -> Option<bool> {
         match &self {
@@ -267,25 +263,6 @@ impl Value {
         }
     }
 
-    /// Convert this value into an integer (if possible)
-    pub fn as_i64(&self) -> Option<i64> {
-        match &self {
-            Value::I64(content) => { return Some(*content); }
-            Value::U64(content) => { return Some(*content as i64); }
-            _ => { return None; }
-
-        }
-    }
-
-    /// Convert this value into an integer (if possible)
-    pub fn as_u64(&self) -> Option<u64> {
-        match &self {
-            Value::I64(content) => { return Some(*content as u64); }
-            Value::U64(content) => { return Some(*content); }
-            _ => { return None; }
-
-        }
-    }
 }
 
 impl From<&str> for Value {
@@ -297,6 +274,53 @@ impl From<&str> for Value {
 impl From<String> for Value {
     fn from(s: String) -> Value {
         return Value::Str(s);
+    }
+}
+
+impl<T> From<Vec<T>> for Value where T: Into<Value> {
+    fn from(mut vec: Vec<T>) -> Value {
+        let mut res = Value::make_list();
+
+        for val in vec.drain(..) {
+            res.list_append(val.into()).unwrap();
+        }
+
+        res
+    }
+}
+    
+impl TryInto<i64> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<i64, ()> {
+        match self {
+            Value::I64(content) => { Ok(content) }
+            Value::U64(content) => { Ok(content as i64) }
+            _ => { Err(()) }
+        }
+    }
+}
+
+impl TryInto<u64> for Value {
+    type Error = ();
+        
+    fn try_into(self) -> Result<u64, ()> {
+        match self {
+            Value::I64(content) => { Ok(content as u64) }
+            Value::U64(content) => { Ok(content) }
+            _ => { Err(()) }
+        }
+    }
+}
+
+impl TryInto<String> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<String, ()> {
+        match self {
+            Value::Str(content) => { Ok(content) }
+            _ => { Err(()) }
+        }
     }
 }
 

@@ -29,6 +29,7 @@ pub enum Expr {
     U64(u64),
     Bool(bool),
     String(String),
+    List(Vec<ParseNode>),
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
     Add(Box<ParseNode>, Box<ParseNode>),

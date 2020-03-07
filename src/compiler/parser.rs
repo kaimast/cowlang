@@ -127,7 +127,23 @@ parser! {
         StringLiteral(s) => {
             (span!(), Expr::String(s))
         }
+        OpenSquareBracket list_vals[v] CloseSquareBracket => {
+            (span!(), Expr::List(v))
+        }
     }
+
+    list_vals: Vec<ParseNode> {
+        list_vals[mut m] Comma atom[a] => {
+            m.push(a);
+            m
+        }
+        atom[a] => {
+            vec![a]
+        }
+        => vec![]
+    }
+
+
 }
 
 type ParseItem = (Token, Span);

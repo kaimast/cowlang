@@ -1,25 +1,29 @@
 use crate::{Interpreter, compile_string, Module, Value};
 
 use std::rc::Rc;
+use std::convert::TryInto;
 
 #[derive(Default)]
 struct TestModule {
 }
 
 impl Module for TestModule {
-    fn call(&self, name: &str, args: Vec<Value>) -> Value {
+    fn call(&self, name: &str, mut argv: Vec<Value>) -> Value {
+        let mut args = argv.drain(..);
+
         if name == "get_answer" {
             let result: i64 = 42;
             return result.into();
         } else if name == "pass_string" {
-            return args[0].as_string().unwrap().into();
+            let thestring: String = args.next().unwrap().try_into().unwrap();
+            return thestring.into();
         } else if name == "add_two" {
             if args.len() != 1 {
                 panic!("Invalid number of argument!");
             }
 
-            let result = args[0].as_i64().unwrap() + 2;
-            return result.into();
+            let result: i64 = args.next().unwrap().try_into().unwrap();
+            return (result + 2).into();
 
         } else {
             panic!("Unexpected function call: {}", name);
