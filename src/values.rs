@@ -296,9 +296,11 @@ impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
         let mut res = Vec::new();
 
         for val in self.into_vec()?.drain(..) {
+
+            #[allow(clippy::match_wild_err_arm)]
             match val.try_into() {
                 Ok(v) => { res.push(v) }
-                Err(_) => { panic!("Type error!"); }
+                Err(_) => { panic!("Type error!");  }
             }
         }
 
