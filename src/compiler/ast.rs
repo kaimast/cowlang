@@ -30,6 +30,7 @@ pub enum Expr {
     Bool(bool),
     String(String),
     List(Vec<ParseNode>),
+    ToStr(Box<ParseNode>),
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
     Add(Box<ParseNode>, Box<ParseNode>),

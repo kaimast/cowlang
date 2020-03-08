@@ -36,6 +36,21 @@ fn compile_empty() {
     assert_eq!(result, Value::None);
 }
 
+#[test]
+fn to_string() {
+    let program = compile_string("\
+        let x = 51431\n\
+        return str(x)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected = String::from("51431");
+    assert_eq!(result, expected.into());
+}
+
+
 
 #[test]
 fn return_integer() {

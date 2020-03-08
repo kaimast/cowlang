@@ -69,6 +69,9 @@ parser! {
     }
 
     term: ParseNode {
+        ToStr OpenBracket atom[inner] CloseBracket => {
+            (span!(), Expr::ToStr(Box::new(inner)))
+        }
         Not atom[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
         }

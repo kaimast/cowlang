@@ -12,6 +12,7 @@ pub enum Token {
     Comment(String),
     Identifier(String),
     Let,
+    ToStr,
     Period,
     OpenBracket,
     CloseBracket,
@@ -40,6 +41,7 @@ lexer! {
 
     r"[ \t\r]" => Token::Whitespace,
     r"\n" => Token::Newline,
+    "str" => Token::ToStr,
     "return" => Token::Return,
     "not" => Token::Not,
     "!" => Token::Not,

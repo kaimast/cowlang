@@ -344,6 +344,8 @@ impl TryInto<String> for Value {
     fn try_into(self) -> Result<String, ()> {
         match self {
             Value::Str(content) => { Ok(content) }
+            Value::I64(i) => { Ok(format!("{}", i)) }
+            Value::U64(i) => { Ok(format!("{}", i)) }
             _ => { Err(()) }
         }
     }

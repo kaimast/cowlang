@@ -1,6 +1,7 @@
 use crate::compiler::*;
 use crate::Value;
 
+use std::convert::TryInto;
 use std::rc::Rc;
 use std::mem;
 use std::collections::HashMap;
@@ -228,6 +229,17 @@ impl Interpreter {
             }
             Expr::String(s) => {
                 return Handle::Value( s.clone().into() );
+            }
+            Expr::ToStr(inner) => {
+                let val = self.step(scope, inner).unwrap_value();
+
+                #[ allow(clippy::match_wild_err_arm) ]
+                let s: String = match val.try_into() {
+                    Ok(s) => { s}
+                    Err(_) => { panic!("Failed to convert to string"); }
+                };
+
+                return Handle::Value( s.into() );
             }
             Expr::List(elems) => {
                 let mut result = Value::make_list();
