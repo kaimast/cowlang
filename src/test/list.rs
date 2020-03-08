@@ -30,7 +30,7 @@ fn list_access() {
 }
 
 #[test]
-fn str_list() {
+fn str_list1() {
     let program = compile_string("\
         let l = [str(5115)]\n\
         return l\n\
@@ -40,5 +40,19 @@ fn str_list() {
     let result = interpreter.run(&program);
 
     let expected = vec![String::from("5115")];
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn str_list2() {
+    let program = compile_string("\
+        let l = [5115]\n\
+        return str(l[0]) \n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected = String::from("5115");
     assert_eq!(result, expected.into());
 }

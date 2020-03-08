@@ -65,13 +65,13 @@ parser! {
         op[lhs] Smaller term[rhs] => {
             (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
         }
+        ToStr OpenBracket term[inner] CloseBracket => {
+            (span!(), Expr::ToStr(Box::new(inner)))
+        }
         term[t] => t
     }
 
     term: ParseNode {
-        ToStr OpenBracket atom[inner] CloseBracket => {
-            (span!(), Expr::ToStr(Box::new(inner)))
-        }
         Not atom[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
         }
@@ -136,11 +136,11 @@ parser! {
     }
 
     list_vals: Vec<ParseNode> {
-        list_vals[mut m] Comma term[a] => {
+        list_vals[mut m] Comma op[a] => {
             m.push(a);
             m
         }
-        term[a] => {
+        op[a] => {
             vec![a]
         }
         => vec![]
