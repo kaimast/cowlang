@@ -49,33 +49,37 @@ parser! {
         If assign[cond] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::If(Box::new(cond), body))
         }
+        op[o] => o
+    }
+
+    op: ParseNode {
+        op[lhs] Plus term[rhs] => {
+            (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
+        }
+        op[lhs] Equals term[rhs] => {
+            (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
+        }
+        op[lhs] Greater term[rhs] => {
+            (span!(), Expr::Compare(CompareType::Greater, Box::new(lhs), Box::new(rhs)))
+        }
+        op[lhs] Smaller term[rhs] => {
+            (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
+        }
         term[t] => t
     }
 
     term: ParseNode {
         Not atom[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
-        },
+        }
         term[lhs] Period Identifier(var) => {
             (span!(), Expr::GetMember(Box::new(lhs), var))
         }
         term[callee] OpenBracket args[a] CloseBracket => {
             (span!(), Expr::Call(Box::new(callee), a))
         }
-        term[callee] OpenSquareBracket StringLiteral(id) CloseSquareBracket => {
-            (span!(), Expr::GetElement(Box::new(callee), id))
-        }
-        term[lhs] Equals atom[rhs] => {
-            (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
-        },
-        term[lhs] Plus atom[rhs] => {
-            (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
-        },
-        term[lhs] Greater atom[rhs] => {
-            (span!(), Expr::Compare(CompareType::Greater, Box::new(lhs), Box::new(rhs)))
-        }
-        term[lhs] Smaller atom[rhs] => {
-            (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
+        term[callee] OpenSquareBracket atom[id] CloseSquareBracket => {
+            (span!(), Expr::GetElement(Box::new(callee), Box::new(id)))
         }
         atom[x] => x
     }

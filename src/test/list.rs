@@ -13,4 +13,20 @@ fn return_list() {
     assert_eq!(result, expected.into());
 }
 
+#[test]
+fn list_access() {
+    let program = compile_string("\
+        let l = [1,2,3]\n\
+
+        let x = l[2]\n\
+        return x+l[0]\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected : i64 = 4;
+    assert_eq!(result, expected.into());
+}
+
 

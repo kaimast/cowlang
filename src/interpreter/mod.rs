@@ -210,9 +210,11 @@ impl Interpreter {
                     panic!("Not a callable!");
                 }
             }
-            Expr::GetElement(callee, key) => {
+            Expr::GetElement(callee, k) => {
                 let res = self.step(scope, callee).unwrap_value();
-                return Handle::Value(res.map_get(key).unwrap().clone());
+                let key = self.step(scope, k).unwrap_value();
+
+                return Handle::Value(res.get_child(key).unwrap().clone());
             }
             Expr::Dictionary(kvs) => {
                 let mut res = Value::make_map();

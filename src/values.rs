@@ -203,10 +203,16 @@ impl Value {
         } 
     }
 
-    pub fn map_get(&self, key: &str) -> Option<&Value> {
+    pub fn get_child(&self, key: Value) -> Option<&Value> {
         match &*self {
             Value::Map(content) => {
-                return content.get(key);
+                //FIXME map should allow other index types too
+                let kstr: String = key.try_into().unwrap();
+                return content.get(&kstr);
+            }
+            Value::List(content) => {
+                let pos: i64 = key.try_into().unwrap();
+                return content.get(pos as usize);
             }
             _ => {
                 panic!("Type mismatch!");
@@ -483,7 +489,7 @@ mod tests
         
         assert_eq!(res, Ok(()));
         assert_eq!(map.num_children(), 1);
-        assert_eq!(map.map_get("foobar"), Some(&"hi".into()));
+        assert_eq!(map.get_child("foobar".into()), Some(&"hi".into()));
 
         let res2 = map.map_insert(String::from("foobar"), "hi".into());
  

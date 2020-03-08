@@ -36,7 +36,7 @@ pub enum Expr {
     Assign(String, Box<ParseNode>),
     AssignNew(String, Box<ParseNode>),
     GetMember(Box<ParseNode>, String),
-    GetElement(Box<ParseNode>, String),
+    GetElement(Box<ParseNode>, Box<ParseNode>),
     Call(Box<ParseNode>, Vec<ParseNode>),
     If(Box<ParseNode>, Statements),
     Compare(CompareType, Box<ParseNode>, Box<ParseNode>),
