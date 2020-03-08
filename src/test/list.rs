@@ -29,4 +29,16 @@ fn list_access() {
     assert_eq!(result, expected.into());
 }
 
+#[test]
+fn str_list() {
+    let program = compile_string("\
+        let l = [str(5115)]\n\
+        return l\n\
+    ");
 
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected = vec![String::from("5115")];
+    assert_eq!(result, expected.into());
+}

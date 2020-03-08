@@ -136,11 +136,11 @@ parser! {
     }
 
     list_vals: Vec<ParseNode> {
-        list_vals[mut m] Comma atom[a] => {
+        list_vals[mut m] Comma term[a] => {
             m.push(a);
             m
         }
-        atom[a] => {
+        term[a] => {
             vec![a]
         }
         => vec![]
