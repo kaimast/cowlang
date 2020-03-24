@@ -29,6 +29,12 @@ struct ModuleCallable {
     name: String
 }
 
+#[ derive(Debug, Clone, PartialEq) ]
+enum ControlFlow {
+    Continue,
+    Return
+}
+
 impl ModuleCallable {
     pub fn new(module: Rc<dyn Module>, name: String) -> Self {
         return Self{module, name};
@@ -104,10 +110,10 @@ impl Interpreter {
         let mut root_scope = Scope{ modules, variables };
 
         for stmt in &program.stmts {
-            let res = self.step(&mut root_scope, &stmt);
+            let (cflw, res) = self.step(&mut root_scope, &stmt);
 
-            if let Handle::Value(r) = res {
-                result = r;
+            if ControlFlow::Return == cflw {
+                result = res.unwrap_value();
                 break;
             }
         }
@@ -115,44 +121,46 @@ impl Interpreter {
         return result;
     }
 
-    fn step(&mut self, scope: &mut Scope, stmt: &ParseNode) -> Handle {
+    fn step(&mut self, scope: &mut Scope, stmt: &ParseNode) -> (ControlFlow, Handle) {
         let (_span, expr) = stmt;
+        let mut control_flow = ControlFlow::Continue;
 
-        match expr {
+        let hdl = match expr {
             Expr::If(cond, body) => {
-                if self.step(scope, cond).unwrap_value().as_bool().unwrap() {
+                if self.step(scope, cond).1.unwrap_value().as_bool().unwrap() {
                     for stmt in body {
-                        let res = self.step(scope, &stmt);
+                        let (cflw, res) = self.step(scope, &stmt);
 
-                        if let Handle::Value(_) = res {
-                            return res;
+                        if cflw == ControlFlow::Return {
+                            return (cflw, res);
                         }
                     }
                 }
                 
-                return Handle::None;
+                Handle::None
             }
             Expr::AssignNew(var, rhs) => {
-                let val = self.step(scope, rhs).unwrap_value();
+                let val = self.step(scope, rhs).1.unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("let {} = {:?}", var, val);
 
                 scope.create_variable(var.clone(), val);
-                return Handle::None;
+
+                Handle::None
             },
             Expr::Var(var) => {
-                return scope.get(var);
+                scope.get(var)
             }
             Expr::Add(lhs, rhs) => {
-                let left = self.step(scope, &lhs).unwrap_value();
-                let right = self.step(scope, &rhs).unwrap_value();
+                let left = self.step(scope, &lhs).1.unwrap_value();
+                let right = self.step(scope, &rhs).1.unwrap_value();
 
-                return Handle::Value( left.add(&right) );
+                Handle::Value( left.add(&right) )
             }
             Expr::Compare(ctype, lhs, rhs) => {
-                let left = self.step(scope, &lhs).unwrap_value();
-                let right = self.step(scope, &rhs).unwrap_value();
+                let left = self.step(scope, &lhs).1.unwrap_value();
+                let right = self.step(scope, &rhs).1.unwrap_value();
 
                 let result = match ctype {
                     CompareType::Greater => {
@@ -166,39 +174,38 @@ impl Interpreter {
                     }
                 };
 
-                return Handle::Value( result.into() );
+                Handle::Value( result.into() )
             }
             Expr::Not(rhs) => {
-                let right = self.step(scope, &rhs).unwrap_value();
-                return Handle::Value( right.negate() );
+                let right = self.step(scope, &rhs).1.unwrap_value();
+                Handle::Value( right.negate() )
             }
             Expr::Assign(var, rhs) => {
-                let val = self.step(scope, rhs).unwrap_value();
+                let val = self.step(scope, rhs).1.unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("{} = {:?}", var, val);
 
                 scope.update_variable(var.clone(), val);
-                return Handle::None;
-
+                Handle::None
             },
             Expr::GetMember(rhs, name) => {
-                let res = self.step(scope, rhs);
+                let res = self.step(scope, rhs).1;
 
                 if let Handle::Object(m) = res {
-                    return Handle::Callable(Box::new(
+                    Handle::Callable(Box::new(
                             ModuleCallable::new(m.clone(), name.clone())
-                        ));
+                        ))
                 } else {
                     panic!("Cannot get member: not an object");
                 }
             },
             Expr::Call(callee, args) => {
-                let res = self.step(scope, callee);
+                let res = self.step(scope, callee).1;
                 let mut argv = Vec::new();
 
                 for arg in args {
-                    if let Handle::Value(v) = self.step(scope, arg) {
+                    if let Handle::Value(v) = self.step(scope, arg).1 {
                         argv.push(v);
                     } else {
                         panic!("Argument is not a value!");
@@ -206,32 +213,32 @@ impl Interpreter {
                 }
 
                 if let Handle::Callable(c) = res {
-                    return Handle::Value(c.call(argv));
+                    Handle::Value(c.call(argv))
                 } else {
                     panic!("Not a callable!");
                 }
             }
             Expr::GetElement(callee, k) => {
-                let res = self.step(scope, callee).unwrap_value();
-                let key = self.step(scope, k).unwrap_value();
+                let res = self.step(scope, callee).1.unwrap_value();
+                let key = self.step(scope, k).1.unwrap_value();
 
-                return Handle::Value(res.get_child(key).unwrap().clone());
+                Handle::Value(res.get_child(key).unwrap().clone())
             }
             Expr::Dictionary(kvs) => {
                 let mut res = Value::make_map();
 
                 for (k, v) in kvs {
-                    let elem = self.step(scope, v).unwrap_value();
+                    let elem = self.step(scope, v).1.unwrap_value();
                     res.map_insert(k.clone(), elem).unwrap();
                 }
 
-                return Handle::Value(res);
+                Handle::Value(res)
             }
             Expr::String(s) => {
-                return Handle::Value( s.clone().into() );
+                Handle::Value( s.clone().into() )
             }
             Expr::ToStr(inner) => {
-                let val = self.step(scope, inner).unwrap_value();
+                let val = self.step(scope, inner).1.unwrap_value();
 
                 #[ allow(clippy::match_wild_err_arm) ]
                 let s: String = match val.try_into() {
@@ -239,32 +246,34 @@ impl Interpreter {
                     Err(_) => { panic!("Failed to convert to string"); }
                 };
 
-                return Handle::Value( s.into() );
+                Handle::Value( s.into() )
             }
             Expr::List(elems) => {
                 let mut result = Value::make_list();
 
                 for e in elems {
-                    let elem = self.step(scope, e).unwrap_value();
+                    let elem = self.step(scope, e).1.unwrap_value();
 
                     result.list_append(elem).unwrap();
                 }
 
-                return Handle::Value(result);
-
+                Handle::Value(result)
             }
             Expr::Bool(b) => {
-                return Handle::Value( b.into());
+                Handle::Value( b.into())
             }
             Expr::I64(i) => {
-                return Handle::Value( i.into());
+                Handle::Value( i.into())
             }
             Expr::U64(i) => {
-                return Handle::Value( i.into() );
+                Handle::Value( i.into() )
             }
             Expr::Return(rhs) => {
-                return self.step(scope, &rhs);
+                control_flow = ControlFlow::Return;
+                self.step(scope, &rhs).1
             }
-        }
+        };
+
+        (control_flow, hdl)
     }
 }

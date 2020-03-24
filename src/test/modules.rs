@@ -48,6 +48,25 @@ fn get_constant() {
     assert_eq!(result, expected.into());
 }
 
+// make sure invoking a module does not break return values
+#[test]
+fn call_and_return() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    test_module.get_answer()\n\
+    return 5501\n
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("test_module"), module);
+
+    let result = interpreter.run(&program);
+
+    let expected: i64 = 5501;
+    assert_eq!(result, expected.into());
+}
+
 #[test]
 fn add_two() {
     let module = Rc::new(TestModule::default());
