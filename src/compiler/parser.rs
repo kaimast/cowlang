@@ -54,16 +54,26 @@ parser! {
 
     op: ParseNode {
         op[lhs] Plus term[rhs] => {
-            (span!(), Expr::Add(Box::new(lhs), Box::new(rhs)))
+            (span!(),
+                Expr::Add{lhs: Box::new(lhs), rhs: Box::new(rhs)})
         }
         op[lhs] Equals term[rhs] => {
-            (span!(), Expr::Compare(CompareType::Equals, Box::new(lhs), Box::new(rhs)))
+            (span!(), Expr::Compare{
+                ctype: CompareType::Equals, lhs: Box::new(lhs),
+                rhs: Box::new(rhs)
+            })
         }
         op[lhs] Greater term[rhs] => {
-            (span!(), Expr::Compare(CompareType::Greater, Box::new(lhs), Box::new(rhs)))
+            (span!(), Expr::Compare{
+                ctype: CompareType::Greater, lhs:Box::new(lhs),
+                rhs: Box::new(rhs)
+            })
         }
         op[lhs] Smaller term[rhs] => {
-            (span!(), Expr::Compare(CompareType::Smaller, Box::new(lhs), Box::new(rhs)))
+            (span!(), Expr::Compare{
+                ctype: CompareType::Smaller, lhs: Box::new(lhs),
+                rhs: Box::new(rhs)
+            })
         }
         ToStr OpenBracket term[inner] CloseBracket => {
             (span!(), Expr::ToStr(Box::new(inner)))

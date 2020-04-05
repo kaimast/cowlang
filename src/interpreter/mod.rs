@@ -4,7 +4,7 @@ use crate::Value;
 use std::convert::TryInto;
 use std::rc::Rc;
 use std::mem;
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 
 mod module;
 pub use module::Module;
@@ -15,7 +15,8 @@ pub struct Interpreter {
     variables: HashMap<String, Value>
 }
 
-struct Scope {
+struct Scope<'a> {
+    parent: Option<&'a Scope<'a>>,
     modules: HashMap<String, Rc<dyn Module>>,
     variables: HashMap<String, Value>
 }
@@ -47,22 +48,34 @@ impl Callable for ModuleCallable {
     }
 }
 
-impl Scope {
+impl<'a> Scope<'a> {
+    pub fn new_with_parent(parent: &'a Scope<'a>) -> Self {
+        Self{ parent: Some(parent), modules: HashMap::new(),
+            variables: HashMap::new() }
+    }
+}
+
+impl Scope<'_> {
     pub fn get(&self, name: &str) -> Handle {
         if let Some(m) = self.modules.get(name) {
-            return Handle::Object(m.clone());
+            Handle::Object(m.clone())
         } else if let Some(v) = self.variables.get(name) {
-            return Handle::Value(v.clone());
+            Handle::Value(v.clone())
+        } else if let Some(parent) = &self.parent {
+            parent.get(name)
         } else {
             panic!("No such value or module '{}'!", name);
         }
     }
 
     pub fn create_variable(&mut self, name: String, val: Value) {
-        let res = self.variables.insert(name, val);
-
-        if res.is_some() {
-            panic!("Variable already existed!");
+        match self.variables.entry(name) {
+            hash_map::Entry::Vacant(o) => {
+                o.insert(val);
+            }
+            hash_map::Entry::Occupied(o) => {
+                panic!("Variable {} already existed!", o.key());
+            }
         }
     }
 
@@ -108,7 +121,7 @@ impl Interpreter {
         let modules = mem::take(&mut self.modules);
         let variables = mem::take(&mut self.variables);
 
-        let mut root_scope = Scope{ modules, variables };
+        let mut root_scope = Scope{ parent: None, modules, variables };
 
         for stmt in &program.stmts {
             let (cflw, res) = self.step(&mut root_scope, &stmt);
@@ -122,15 +135,17 @@ impl Interpreter {
         return result;
     }
 
-    fn step(&mut self, scope: &mut Scope, stmt: &ParseNode) -> (ControlFlow, Handle) {
+    fn step<'a>(&mut self, scope: &'a mut Scope, stmt: &ParseNode) -> (ControlFlow, Handle) {
         let (_span, expr) = stmt;
         let mut control_flow = ControlFlow::Continue;
 
         let hdl = match expr {
             Expr::If(cond, body) => {
                 if self.step(scope, cond).1.unwrap_value().as_bool().unwrap() {
+                    let mut sub_scope = Scope::new_with_parent(&*scope);
+
                     for stmt in body {
-                        let (cflw, res) = self.step(scope, &stmt);
+                        let (cflw, res) = self.step(&mut sub_scope, &stmt);
 
                         if cflw == ControlFlow::Return {
                             return (cflw, res);
@@ -150,16 +165,19 @@ impl Interpreter {
 
                 Handle::None
             },
+            Expr::ForIn{iter: _, target_name: _} => {
+                todo!()
+            }
             Expr::Var(var) => {
                 scope.get(var)
             }
-            Expr::Add(lhs, rhs) => {
+            Expr::Add{lhs, rhs} => {
                 let left = self.step(scope, &lhs).1.unwrap_value();
                 let right = self.step(scope, &rhs).1.unwrap_value();
 
                 Handle::Value( left.add(&right) )
             }
-            Expr::Compare(ctype, lhs, rhs) => {
+            Expr::Compare{ctype, lhs, rhs} => {
                 let left = self.step(scope, &lhs).1.unwrap_value();
                 let right = self.step(scope, &rhs).1.unwrap_value();
 

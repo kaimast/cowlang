@@ -70,3 +70,23 @@ fn list_len() {
     let expected:u64 = 4;
     assert_eq!(result, expected.into());
 }
+
+/*
+#[test]
+fn iterate_list() {
+    let program = compile_string("\
+        let l = [5, 5, 10]\n\n
+        let result = 0
+
+        for num in l:
+            result += num
+
+        return result\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:u64 = 4;
+    assert_eq!(result, expected.into());
+}*/

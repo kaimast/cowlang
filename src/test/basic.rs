@@ -13,6 +13,25 @@ fn compile_comment() {
     assert_eq!(result, Value::None);
 }
 
+#[test]
+fn scoped_variables() {
+    let program = compile_string("\
+        let foo = 5\n\
+        
+        if true:\
+      \n    let foo = 10\n\
+        \n\
+        return foo");
+
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:i64 = 5;
+
+    assert_eq!(result, expected.into());
+}
+
 /* FIXME don't panic if compile fails
 #[test]
 fn error() {
