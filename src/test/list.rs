@@ -56,3 +56,17 @@ fn str_list2() {
     let expected = String::from("5115");
     assert_eq!(result, expected.into());
 }
+
+#[test]
+fn list_len() {
+    let program = compile_string("\
+        let l = [215799, 14, 141, 5115]\n\
+        return l.len()\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:u64 = 4;
+    assert_eq!(result, expected.into());
+}

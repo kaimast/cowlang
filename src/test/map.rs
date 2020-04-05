@@ -29,3 +29,16 @@ fn nested_map() {
 }
 
 
+#[test]
+fn map_len() {
+    let program = compile_string("\
+        let m = {'foo': 'bar', 'faz': 'baz'}\n\
+        return m.len()\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:u64 = 2;
+    assert_eq!(result, expected.into());
+}

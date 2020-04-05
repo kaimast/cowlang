@@ -78,6 +78,7 @@ impl Scope {
 enum Handle {
     None,
     Value(Value),
+    BuiltinCallable(Value, String),
     Object(Rc<dyn Module>),
     Callable(Box<dyn Callable>)
 }
@@ -192,12 +193,18 @@ impl Interpreter {
             Expr::GetMember(rhs, name) => {
                 let res = self.step(scope, rhs).1;
 
-                if let Handle::Object(m) = res {
-                    Handle::Callable(Box::new(
-                            ModuleCallable::new(m.clone(), name.clone())
-                        ))
-                } else {
-                    panic!("Cannot get member: not an object");
+                match res {
+                    Handle::Object(m) => {
+                        Handle::Callable(Box::new(
+                                ModuleCallable::new(m.clone(), name.clone())
+                            ))
+                    }
+                    Handle::Value(val) => {
+                        Handle::BuiltinCallable(val, name.clone())
+                    }
+                    _ => {
+                        panic!("GetMember got unexpected Handle");
+                    }
                 }
             },
             Expr::Call(callee, args) => {
@@ -214,6 +221,13 @@ impl Interpreter {
 
                 if let Handle::Callable(c) = res {
                     Handle::Value(c.call(argv))
+                } else if let Handle::BuiltinCallable(val, name) = res {
+                    if name == "len" {
+                        let len = val.num_children() as u64;
+                        Handle::Value(len.into())
+                    } else {
+                        panic!("No such builtin: {}", name);
+                    }
                 } else {
                     panic!("Not a callable!");
                 }

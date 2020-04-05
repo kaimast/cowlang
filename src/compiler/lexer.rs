@@ -68,6 +68,8 @@ lexer! {
         Token::U64Literal(tok[..tok.len()-1].parse().unwrap())
     },
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
+    // Allow string literal with delimited by ' as well
+    r#"'[^']*'"# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => Token::Identifier(tok.into()),
