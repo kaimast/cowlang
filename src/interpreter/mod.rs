@@ -38,13 +38,13 @@ enum ControlFlow {
 
 impl ModuleCallable {
     pub fn new(module: Rc<dyn Module>, name: String) -> Self {
-        return Self{module, name};
+        Self{module, name}
     }
 }
 
 impl Callable for ModuleCallable {
     fn call(&self, args: Vec<Value>) -> Value {
-        return self.module.call(&self.name, args);
+        self.module.call(&self.name, args)
     }
 }
 
@@ -99,9 +99,9 @@ enum Handle {
 impl Handle {
     pub fn unwrap_value(self) -> Value {
         if let Handle::Value(value) = self {
-            return value;
+            value
         } else {
-            panic!("Not a value!");
+            panic!("Handle is not a value!");
         }
     }
 }
@@ -132,7 +132,7 @@ impl Interpreter {
             }
         }
 
-        return result;
+        result
     }
 
     fn step<'a>(&mut self, scope: &'a mut Scope, stmt: &ParseNode) -> (ControlFlow, Handle) {

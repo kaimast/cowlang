@@ -272,15 +272,11 @@ impl Value {
 }
 
 impl From<&str> for Value {
-    fn from(s: &str) -> Value {
-        return Value::Str(s.to_string());
-    }
+    fn from(s: &str) -> Self { Self::Str(s.to_string()) }
 }
 
 impl From<String> for Value {
-    fn from(s: String) -> Value {
-        return Value::Str(s);
-    }
+    fn from(s: String) -> Self { Self::Str(s) }
 }
 
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
@@ -352,39 +348,27 @@ impl TryInto<String> for Value {
 }
 
 impl From<&i64> for Value {
-    fn from(i: &i64) -> Value {
-        return Value::I64(*i);
-    }
+    fn from(i: &i64) -> Self { Self::I64(*i) }
 }
 
 impl From<&u64> for Value {
-    fn from(i: &u64) -> Value {
-        return Value::U64(*i);
-    }
+    fn from(i: &u64) -> Self { Self::U64(*i) }
 }
 
 impl From<i64> for Value {
-    fn from(i: i64) -> Value {
-        return Value::I64(i);
-    }
+    fn from(i: i64) -> Self { Self::I64(i) }
 }
 
 impl From<u64> for Value {
-    fn from(i: u64) -> Value {
-        return Value::U64(i);
-    }
+    fn from(i: u64) -> Self { Self::U64(i) }
 }
 
 impl From<&bool> for Value {
-    fn from(b: &bool) -> Value {
-        return Value::Bool(*b);
-    }
+    fn from(b: &bool) -> Self { Self::Bool(*b) }
 }
 
 impl From<bool> for Value {
-    fn from(b: bool) -> Value {
-        return Value::Bool(b);
-    }
+    fn from(b: bool) -> Self{ Self::Bool(b) }
 }
 
 #[ cfg(feature="python-bindings") ]

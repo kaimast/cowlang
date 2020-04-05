@@ -15,7 +15,7 @@ pub fn compile_string(input: &str) -> Program {
     let lexer = Lexer::new(input);
     
     match parse(lexer) {
-        Ok(p) => { return p; }
+        Ok(p) => { p }
         Err((info, e)) => {
             match info {
                 Some((_token, span)) => {
