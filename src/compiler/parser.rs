@@ -53,7 +53,7 @@ parser! {
         If assign[cond] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::If{cond: Box::new(cond), body})
         }
-        For Identifier(target_name) In atom[iter] Colon Newline Indent statements[body] Dedent => {
+        For Identifier(target_name) In term[iter] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::ForIn{iter: Box::new(iter), target_name, body})
         }
         op[o] => o

@@ -28,7 +28,6 @@ fn nested_map() {
     assert_eq!(result, expected.into());
 }
 
-
 #[test]
 fn map_len() {
     let program = compile_string("\
@@ -40,5 +39,24 @@ fn map_len() {
     let result = interpreter.run(&program);
 
     let expected:u64 = 2;
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn map_iter_values() {
+    let program = compile_string("\
+        let m = {'foo': 6, 'faz': 4, 'bar': 11}\n\
+        let result = 0u\n\
+        \n\
+        for v in m.values():\
+      \n     result += v\n\
+        \n\
+        return result\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:u64 = 21;
     assert_eq!(result, expected.into());
 }

@@ -228,6 +228,15 @@ impl Interpreter {
                     if name == "len" {
                         let len = val.num_children() as u64;
                         Handle::Value(len.into())
+                    } else if name == "values" {
+                        let mut map = val.into_map().unwrap();
+                        let mut vals = Value::make_list();
+
+                        for (_, v) in map.drain() {
+                            vals.list_append(v).unwrap();
+                        }
+
+                        Handle::Value(vals)
                     } else {
                         panic!("No such builtin: {}", name);
                     }
