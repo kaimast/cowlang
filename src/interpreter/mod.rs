@@ -138,7 +138,7 @@ impl Interpreter {
                 if let Value::List(content) = iter {
                     for elem in content {
                         scopes.push();
-                        scopes.create_variable(target_name.clone(), elem.into());
+                        scopes.create_variable(target_name.clone(), elem);
 
                         for stmt in body {
                             self.step(scopes, stmt);
