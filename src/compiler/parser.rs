@@ -43,11 +43,18 @@ parser! {
         Let Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
         },
+        Identifier(var) PlusEquals term[rhs] => {
+            (span!(),
+                Expr::AddEquals{lhs: var, rhs: Box::new(rhs)})
+        }
         Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
         },
         If assign[cond] Colon Newline Indent statements[body] Dedent => {
-            (span!(), Expr::If(Box::new(cond), body))
+            (span!(), Expr::If{cond: Box::new(cond), body})
+        }
+        For Identifier(target_name) In atom[iter] Colon Newline Indent statements[body] Dedent => {
+            (span!(), Expr::ForIn{iter: Box::new(iter), target_name, body})
         }
         op[o] => o
     }
@@ -155,8 +162,6 @@ parser! {
         }
         => vec![]
     }
-
-
 }
 
 type ParseItem = (Token, Span);

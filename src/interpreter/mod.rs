@@ -9,19 +9,16 @@ use std::collections::{hash_map, HashMap};
 mod module;
 pub use module::Module;
 
+mod scopes;
+use scopes::Scopes;
+
 #[ derive(Default) ]
 pub struct Interpreter {
     modules: HashMap<String, Rc<dyn Module>>,
     variables: HashMap<String, Value>
 }
 
-struct Scope<'a> {
-    parent: Option<&'a Scope<'a>>,
-    modules: HashMap<String, Rc<dyn Module>>,
-    variables: HashMap<String, Value>
-}
-
-trait Callable {
+pub trait Callable {
     fn call(&self, args: Vec<Value>) -> Value;
 }
 
@@ -48,47 +45,7 @@ impl Callable for ModuleCallable {
     }
 }
 
-impl<'a> Scope<'a> {
-    pub fn new_with_parent(parent: &'a Scope<'a>) -> Self {
-        Self{ parent: Some(parent), modules: HashMap::new(),
-            variables: HashMap::new() }
-    }
-}
-
-impl Scope<'_> {
-    pub fn get(&self, name: &str) -> Handle {
-        if let Some(m) = self.modules.get(name) {
-            Handle::Object(m.clone())
-        } else if let Some(v) = self.variables.get(name) {
-            Handle::Value(v.clone())
-        } else if let Some(parent) = &self.parent {
-            parent.get(name)
-        } else {
-            panic!("No such value or module '{}'!", name);
-        }
-    }
-
-    pub fn create_variable(&mut self, name: String, val: Value) {
-        match self.variables.entry(name) {
-            hash_map::Entry::Vacant(o) => {
-                o.insert(val);
-            }
-            hash_map::Entry::Occupied(o) => {
-                panic!("Variable {} already existed!", o.key());
-            }
-        }
-    }
-
-    pub fn update_variable(&mut self, name: String, val: Value) {
-        let res = self.variables.insert(name, val);
-
-        if res.is_none() {
-            panic!("Cannot update value. Variable did not exist");
-        }
-    }
-}
-
-enum Handle {
+pub enum Handle {
     None,
     Value(Value),
     BuiltinCallable(Value, String),
@@ -121,10 +78,10 @@ impl Interpreter {
         let modules = mem::take(&mut self.modules);
         let variables = mem::take(&mut self.variables);
 
-        let mut root_scope = Scope{ parent: None, modules, variables };
+        let mut root_scopes = Scopes::new(modules, variables);
 
         for stmt in &program.stmts {
-            let (cflw, res) = self.step(&mut root_scope, &stmt);
+            let (cflw, res) = self.step(&mut root_scopes, &stmt);
 
             if ControlFlow::Return == cflw {
                 result = res.unwrap_value();
@@ -135,51 +92,79 @@ impl Interpreter {
         result
     }
 
-    fn step<'a>(&mut self, scope: &'a mut Scope, stmt: &ParseNode) -> (ControlFlow, Handle) {
+    fn step(&mut self, scopes: &mut Scopes, stmt: &ParseNode) -> (ControlFlow, Handle) {
         let (_span, expr) = stmt;
         let mut control_flow = ControlFlow::Continue;
 
         let hdl = match expr {
-            Expr::If(cond, body) => {
-                if self.step(scope, cond).1.unwrap_value().as_bool().unwrap() {
-                    let mut sub_scope = Scope::new_with_parent(&*scope);
+            Expr::If{cond, body} => {
+                if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
+                    scopes.push();
 
                     for stmt in body {
-                        let (cflw, res) = self.step(&mut sub_scope, &stmt);
+                        let (cflw, res) = self.step(scopes, &stmt);
 
                         if cflw == ControlFlow::Return {
                             return (cflw, res);
                         }
                     }
+
+                    scopes.pop();
                 }
                 
                 Handle::None
             }
+            Expr::AddEquals{lhs, rhs} => {
+                let var = scopes.get(lhs).unwrap_value();
+                let right = self.step(scopes, &rhs).1.unwrap_value();
+
+                scopes.update_variable(lhs, var.add(&right));
+
+                Handle::None
+            }
             Expr::AssignNew(var, rhs) => {
-                let val = self.step(scope, rhs).1.unwrap_value();
+                let val = self.step(scopes, rhs).1.unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("let {} = {:?}", var, val);
 
-                scope.create_variable(var.clone(), val);
+                scopes.create_variable(var.clone(), val);
 
                 Handle::None
             },
-            Expr::ForIn{iter: _, target_name: _} => {
-                todo!()
+            Expr::ForIn{iter, target_name, body} => {
+                let iter = self.step(scopes, iter).1.unwrap_value();
+
+                if let Value::List(content) = iter {
+                    for elem in content {
+                        scopes.push();
+                        scopes.create_variable(target_name.clone(), elem.into());
+
+                        for stmt in body {
+                            self.step(scopes, stmt);
+                        }
+                        scopes.pop();
+                    }
+
+                    Handle::None
+                } else if let Value::Map(_) = iter {
+                    todo!();
+                } else {
+                    panic!("Cannot iterate: not a list");
+                }
             }
             Expr::Var(var) => {
-                scope.get(var)
+                scopes.get(var)
             }
             Expr::Add{lhs, rhs} => {
-                let left = self.step(scope, &lhs).1.unwrap_value();
-                let right = self.step(scope, &rhs).1.unwrap_value();
+                let left = self.step(scopes, &lhs).1.unwrap_value();
+                let right = self.step(scopes, &rhs).1.unwrap_value();
 
                 Handle::Value( left.add(&right) )
             }
             Expr::Compare{ctype, lhs, rhs} => {
-                let left = self.step(scope, &lhs).1.unwrap_value();
-                let right = self.step(scope, &rhs).1.unwrap_value();
+                let left = self.step(scopes, &lhs).1.unwrap_value();
+                let right = self.step(scopes, &rhs).1.unwrap_value();
 
                 let result = match ctype {
                     CompareType::Greater => {
@@ -196,20 +181,20 @@ impl Interpreter {
                 Handle::Value( result.into() )
             }
             Expr::Not(rhs) => {
-                let right = self.step(scope, &rhs).1.unwrap_value();
+                let right = self.step(scopes, &rhs).1.unwrap_value();
                 Handle::Value( right.negate() )
             }
             Expr::Assign(var, rhs) => {
-                let val = self.step(scope, rhs).1.unwrap_value();
+                let val = self.step(scopes, rhs).1.unwrap_value();
 
                 #[ cfg(feature="verbose") ]
                 println!("{} = {:?}", var, val);
 
-                scope.update_variable(var.clone(), val);
+                scopes.update_variable(var, val);
                 Handle::None
             },
             Expr::GetMember(rhs, name) => {
-                let res = self.step(scope, rhs).1;
+                let res = self.step(scopes, rhs).1;
 
                 match res {
                     Handle::Object(m) => {
@@ -226,11 +211,11 @@ impl Interpreter {
                 }
             },
             Expr::Call(callee, args) => {
-                let res = self.step(scope, callee).1;
+                let res = self.step(scopes, callee).1;
                 let mut argv = Vec::new();
 
                 for arg in args {
-                    if let Handle::Value(v) = self.step(scope, arg).1 {
+                    if let Handle::Value(v) = self.step(scopes, arg).1 {
                         argv.push(v);
                     } else {
                         panic!("Argument is not a value!");
@@ -251,8 +236,8 @@ impl Interpreter {
                 }
             }
             Expr::GetElement(callee, k) => {
-                let res = self.step(scope, callee).1.unwrap_value();
-                let key = self.step(scope, k).1.unwrap_value();
+                let res = self.step(scopes, callee).1.unwrap_value();
+                let key = self.step(scopes, k).1.unwrap_value();
 
                 Handle::Value(res.get_child(key).unwrap().clone())
             }
@@ -260,7 +245,7 @@ impl Interpreter {
                 let mut res = Value::make_map();
 
                 for (k, v) in kvs {
-                    let elem = self.step(scope, v).1.unwrap_value();
+                    let elem = self.step(scopes, v).1.unwrap_value();
                     res.map_insert(k.clone(), elem).unwrap();
                 }
 
@@ -270,7 +255,7 @@ impl Interpreter {
                 Handle::Value( s.clone().into() )
             }
             Expr::ToStr(inner) => {
-                let val = self.step(scope, inner).1.unwrap_value();
+                let val = self.step(scopes, inner).1.unwrap_value();
 
                 #[ allow(clippy::match_wild_err_arm) ]
                 let s: String = match val.try_into() {
@@ -284,7 +269,7 @@ impl Interpreter {
                 let mut result = Value::make_list();
 
                 for e in elems {
-                    let elem = self.step(scope, e).1.unwrap_value();
+                    let elem = self.step(scopes, e).1.unwrap_value();
 
                     result.list_append(elem).unwrap();
                 }
@@ -302,7 +287,7 @@ impl Interpreter {
             }
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;
-                self.step(scope, &rhs).1
+                self.step(scopes, &rhs).1
             }
         };
 

@@ -33,14 +33,15 @@ pub enum Expr {
     ToStr(Box<ParseNode>),
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
-    ForIn{iter: Box<ParseNode>, target_name: String},
+    ForIn{iter: Box<ParseNode>, target_name: String, body: Statements},
     Add{lhs: Box<ParseNode>, rhs: Box<ParseNode>},
     Assign(String, Box<ParseNode>),
+    AddEquals{lhs: String, rhs: Box<ParseNode>},
     AssignNew(String, Box<ParseNode>),
     GetMember(Box<ParseNode>, String),
     GetElement(Box<ParseNode>, Box<ParseNode>),
     Call(Box<ParseNode>, Vec<ParseNode>),
-    If(Box<ParseNode>, Statements),
+    If{cond: Box<ParseNode>, body: Statements},
     Compare{ctype: CompareType, lhs: Box<ParseNode>, rhs: Box<ParseNode>},
     Return(Box<ParseNode>)
 }

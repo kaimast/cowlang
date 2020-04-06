@@ -71,22 +71,21 @@ fn list_len() {
     assert_eq!(result, expected.into());
 }
 
-/*
 #[test]
 fn iterate_list() {
     let program = compile_string("\
-        let l = [5, 5, 10]\n\n
-        let result = 0
-
-        for num in l:
-            result += num
-
+        let l = [5, 5, 10]\n\
+        let result = 0u\
+      \n\n\
+        for num in l:\
+      \n   result += num\n\
+        \n\
         return result\n\
     ");
 
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
-    let expected:u64 = 4;
+    let expected:u64 = 20;
     assert_eq!(result, expected.into());
-}*/
+}
