@@ -374,14 +374,14 @@ impl From<bool> for Value {
 #[ cfg(feature="python-bindings") ]
 impl FromPyObject<'_> for Value {
     fn extract(obj: &PyAny) -> PyResult<Self> {
-        match obj.downcast_ref::<PyString>() {
+        match PyAny::downcast::<PyString>(obj) {
             Ok(string) => {
                 return Ok( Value::Str( PyString::extract(string).unwrap() ));
             }
             _ => {}
         }
         
-        match obj.downcast_ref::<PyList>() {
+        match PyAny::downcast::<PyList>(obj) {
             Ok(list) => {
                 let mut result = Value::make_list();
 
@@ -401,7 +401,7 @@ impl FromPyObject<'_> for Value {
             _ => {}
         }
 
-        match obj.downcast_ref::<PyLong>() {
+        match PyAny::downcast::<PyLong>(obj) {
             Ok(pyint) => {
                 let i: i64 = pyint.extract()?;
                 return Ok( i.into() );
@@ -409,7 +409,7 @@ impl FromPyObject<'_> for Value {
             _ => {}
         }
 
-        match obj.downcast_ref::<PyInt>() {
+        match PyAny::downcast::<PyInt>(obj) {
             Ok(pyint) => {
                 let i: i64 = pyint.extract()?;
                 return Ok( i.into() );
