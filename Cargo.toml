@@ -8,7 +8,8 @@ edition = "2018"
 pyo3 = { version="0.9", optional=true }
 bincode = { version="1.2" }
 serde = { version="1.0", features=["derive"] }
-plex = { version="0.2" }
+#plex = { version="0.2" }
+plex = { git="https://github.com/kaimast/plex.git" }
 
 [features]
 default = []
