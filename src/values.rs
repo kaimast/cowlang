@@ -395,47 +395,40 @@ impl From<bool> for Value {
 #[ cfg(feature="python-bindings") ]
 impl FromPyObject<'_> for Value {
     fn extract(obj: &PyAny) -> PyResult<Self> {
-        match PyAny::downcast::<PyString>(obj) {
-            Ok(string) => {
-                return Ok( Value::Str( PyString::extract(string).unwrap() ));
-            }
-            _ => {}
+        if let Ok(string) = PyAny::downcast::<PyString>(obj) {
+            return Ok( Value::Str( PyString::extract(string).unwrap() ));
         }
         
-        match PyAny::downcast::<PyList>(obj) {
-            Ok(list) => {
-                let mut result = Value::make_list();
+        if let Ok(list) = PyAny::downcast::<PyList>(obj) {
+            let mut result = Value::make_list();
 
-                for elem in list {
-                    let child;
+            for elem in list {
+                let child;
 
-                    match elem.extract() {
-                        Ok(c) => { child = c; }
-                        Err(e) => { return Err(e); }
-                    }
-
-                    result.list_append(child).unwrap();
+                match elem.extract() {
+                    Ok(c) => { child = c; }
+                    Err(e) => { return Err(e); }
                 }
 
-                return Ok( result);
+                result.list_append(child).unwrap();
             }
-            _ => {}
+
+            return Ok( result);
+        }
+        
+        if let Ok(pyint) = PyAny::downcast::<PyLong>(obj) {
+            let i: i64 = pyint.extract()?;
+            return Ok( i.into() );
         }
 
-        match PyAny::downcast::<PyLong>(obj) {
-            Ok(pyint) => {
-                let i: i64 = pyint.extract()?;
-                return Ok( i.into() );
-            }
-            _ => {}
+        if let Ok(pyint) = PyAny::downcast::<PyInt>(obj) {
+            let i: i64 = pyint.extract()?;
+            return Ok( i.into() );
         }
 
-        match PyAny::downcast::<PyInt>(obj) {
-            Ok(pyint) => {
-                let i: i64 = pyint.extract()?;
-                return Ok( i.into() );
-            }
-            _ => {}
+        if let Ok(pybytes) = PyAny::downcast::<PyByteArray>(obj) {
+            let bytes: Bytes = pybytes.to_vec().into();
+            return Ok(bytes.into());
         }
 
         let err = PyErr::new::<pyexceptions::TypeError, _>("Failed to convert PyObject to Value");
@@ -467,6 +460,9 @@ impl IntoPy<PyObject> for Value {
             }
             Value::List(l) => {
                 return l.into_py(py);
+            }
+            Value::Bytes(b) => {
+                return PyByteArray::new(py, &b).into();
             }
         }
     }
