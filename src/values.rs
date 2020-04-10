@@ -17,6 +17,8 @@ use pyo3::types::*;
 
 use crate::error::Error;
 
+use bytes::Bytes;
+
 #[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
 pub enum ValueType {
     None,
@@ -25,7 +27,8 @@ pub enum ValueType {
     I64,
     U64,
     Map,
-    List
+    List,
+    Bytes
 }
 
 #[ derive(Serialize, Deserialize, Clone, Debug, PartialEq) ]
@@ -36,7 +39,8 @@ pub enum Value {
     I64(i64),
     U64(u64),
     Map(HashMap<String, Value>),
-    List(Vec<Value>)
+    List(Vec<Value>),
+    Bytes(Bytes)
 }
 
 impl Value {
@@ -279,6 +283,10 @@ impl From<String> for Value {
     fn from(s: String) -> Self { Self::Str(s) }
 }
 
+impl From<Bytes> for Value {
+    fn from(b: Bytes) -> Self { Self::Bytes(b) }
+}
+
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
     fn from(mut vec: Vec<T>) -> Value {
         let mut res = Value::make_list();
@@ -290,6 +298,19 @@ impl<T> From<Vec<T>> for Value where T: Into<Value> {
         res
     }
 }
+
+impl TryInto<Bytes> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<Bytes, ()> {
+        match self {
+            Value::Bytes(b) => { Ok(b) }
+            _ => { Err(()) }
+        }
+    }
+}
+
+
 
 impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
     type Error = ();
