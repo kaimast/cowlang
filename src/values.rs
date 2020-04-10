@@ -363,6 +363,7 @@ impl TryInto<String> for Value {
             Value::Str(content) => { Ok(content) }
             Value::I64(i) => { Ok(format!("{}", i)) }
             Value::U64(i) => { Ok(format!("{}", i)) }
+            Value::Bytes(b) => { Ok(format!("{:#x}", &b)) }
             _ => { Err(()) }
         }
     }
