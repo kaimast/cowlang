@@ -9,8 +9,8 @@ pub use error::Error;
 mod compiler;
 pub use compiler::*;
 
-mod interpreter;
-pub use interpreter::*;
+pub mod interpreter;
+pub use interpreter::{Interpreter, Module};
 
 #[cfg(test)]
 mod test;
