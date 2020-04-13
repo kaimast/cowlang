@@ -6,11 +6,12 @@ use std::rc::Rc;
 use std::mem;
 use std::collections::{hash_map, HashMap};
 
-mod module;
-pub use module::Module;
-
 mod scopes;
 use scopes::Scopes;
+
+pub trait Module {
+    fn get_member(&self, name: &str) -> Handle;
+}
 
 #[ derive(Default) ]
 pub struct Interpreter {
@@ -181,7 +182,7 @@ impl Interpreter {
 
                 match res {
                     Handle::Object(m) => {
-                        Handle::Callable(m.get_member(name))
+                        m.get_member(name)
                     }
                     Handle::Value(val) => {
                         Handle::BuiltinCallable(val, name.clone())

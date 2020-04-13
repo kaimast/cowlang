@@ -1,5 +1,5 @@
 use crate::{Interpreter, compile_string, Module, Value};
-use crate::interpreter::Callable;
+use crate::interpreter::{Callable, Handle};
 
 use std::rc::Rc;
 use std::convert::TryInto;
@@ -12,13 +12,15 @@ struct PassString {}
 struct AddTwo {}
 
 impl Module for TestModule {
-    fn get_member(&self, name: &str) -> Box<dyn Callable> {
+    fn get_member(&self, name: &str) -> Handle {
         if name == "get_answer" {
-            Box::new(GetAnswer{})
+            Handle::Callable( Box::new(GetAnswer{}) )
         } else if name == "pass_string" {
-            Box::new(PassString{})
+            Handle::Callable( Box::new(PassString{}) )
         } else if name == "add_two" {
-            Box::new(AddTwo{})
+            Handle::Callable( Box::new(AddTwo{}) )
+        } else if name == "MY_CONSTANT" {
+            Handle::Value( "this is a test".to_string().into() )
         } else {
             panic!("Unexpected function call: {}", name);
         }
@@ -26,7 +28,7 @@ impl Module for TestModule {
 }
 
 impl Callable for GetAnswer {
-    fn call(&self, mut argv: Vec<Value>) -> Value {
+    fn call(&self, mut _argv: Vec<Value>) -> Value {
         let result: i64 = 42;
         result.into()
     }
@@ -56,7 +58,7 @@ impl Callable for PassString {
 }
 
 #[test]
-fn get_constant() {
+fn constant_function() {
     let module = Rc::new(TestModule::default());
 
     let program = compile_string("\
@@ -69,6 +71,23 @@ fn get_constant() {
     let result = interpreter.run(&program);
 
     let expected: i64 = 42;
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn get_constant() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    return test_module.MY_CONSTANT\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("test_module"), module);
+
+    let result = interpreter.run(&program);
+
+    let expected = "this is a test".to_string();
     assert_eq!(result, expected.into());
 }
 
