@@ -1,5 +1,7 @@
 use crate::values::Value;
+use crate::interpreter::Callable;
 
 pub trait Module {
-    fn call(&self, name: &str, args: Vec<Value>) -> Value;
+    fn get_member(&self, name: &str) -> Box<dyn Callable>;
 }
+

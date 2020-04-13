@@ -1,33 +1,57 @@
 use crate::{Interpreter, compile_string, Module, Value};
+use crate::interpreter::Callable;
 
 use std::rc::Rc;
 use std::convert::TryInto;
 
 #[derive(Default)]
-struct TestModule {
-}
+struct TestModule {}
+
+struct GetAnswer {}
+struct PassString {}
+struct AddTwo {}
 
 impl Module for TestModule {
-    fn call(&self, name: &str, mut argv: Vec<Value>) -> Value {
-        let mut args = argv.drain(..);
-
+    fn get_member(&self, name: &str) -> Box<dyn Callable> {
         if name == "get_answer" {
-            let result: i64 = 42;
-            return result.into();
+            Box::new(GetAnswer{})
         } else if name == "pass_string" {
-            let thestring: String = args.next().unwrap().try_into().unwrap();
-            return thestring.into();
+            Box::new(PassString{})
         } else if name == "add_two" {
-            if args.len() != 1 {
-                panic!("Invalid number of argument!");
-            }
-
-            let result: i64 = args.next().unwrap().try_into().unwrap();
-            return (result + 2).into();
-
+            Box::new(AddTwo{})
         } else {
             panic!("Unexpected function call: {}", name);
         }
+    }
+}
+
+impl Callable for GetAnswer {
+    fn call(&self, mut argv: Vec<Value>) -> Value {
+        let result: i64 = 42;
+        result.into()
+    }
+}
+
+impl Callable for AddTwo {
+    fn call(&self, mut argv: Vec<Value>) -> Value {
+        let mut args = argv.drain(..);
+
+        if args.len() != 1 {
+            panic!("Invalid number of argument!");
+        }
+
+        let result: i64 = args.next().unwrap().try_into().unwrap();
+        (result + 2).into()
+    }
+}
+
+impl Callable for PassString {
+
+    fn call(&self, mut argv: Vec<Value>) -> Value {
+        let mut args = argv.drain(..);
+
+        let thestring: String = args.next().unwrap().try_into().unwrap();
+        thestring.into()
     }
 }
 

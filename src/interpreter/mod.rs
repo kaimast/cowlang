@@ -22,27 +22,10 @@ pub trait Callable {
     fn call(&self, args: Vec<Value>) -> Value;
 }
 
-struct ModuleCallable {
-    module: Rc<dyn Module>,
-    name: String
-}
-
 #[ derive(Debug, Clone, PartialEq) ]
 enum ControlFlow {
     Continue,
     Return
-}
-
-impl ModuleCallable {
-    pub fn new(module: Rc<dyn Module>, name: String) -> Self {
-        Self{module, name}
-    }
-}
-
-impl Callable for ModuleCallable {
-    fn call(&self, args: Vec<Value>) -> Value {
-        self.module.call(&self.name, args)
-    }
 }
 
 pub enum Handle {
@@ -198,9 +181,7 @@ impl Interpreter {
 
                 match res {
                     Handle::Object(m) => {
-                        Handle::Callable(Box::new(
-                                ModuleCallable::new(m.clone(), name.clone())
-                            ))
+                        Handle::Callable(m.get_member(name))
                     }
                     Handle::Value(val) => {
                         Handle::BuiltinCallable(val, name.clone())
