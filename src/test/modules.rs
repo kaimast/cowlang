@@ -12,7 +12,7 @@ struct PassString {}
 struct AddTwo {}
 
 impl Module for TestModule {
-    fn get_member(&self, name: &str) -> Handle {
+    fn get_member(&self, _self_ptr: &Rc<dyn Module>, name: &str) -> Handle {
         if name == "get_answer" {
             Handle::Callable( Box::new(GetAnswer{}) )
         } else if name == "pass_string" {

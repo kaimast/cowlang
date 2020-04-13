@@ -10,7 +10,7 @@ mod scopes;
 use scopes::Scopes;
 
 pub trait Module {
-    fn get_member(&self, name: &str) -> Handle;
+    fn get_member(&self, self_ptr: &Rc<dyn Module>, name: &str) -> Handle;
 }
 
 #[ derive(Default) ]
@@ -182,7 +182,7 @@ impl Interpreter {
 
                 match res {
                     Handle::Object(m) => {
-                        m.get_member(name)
+                        m.get_member(&m, name)
                     }
                     Handle::Value(val) => {
                         Handle::BuiltinCallable(val, name.clone())
