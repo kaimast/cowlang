@@ -420,6 +420,11 @@ impl From<i64> for Value {
     fn from(i: i64) -> Self { Self::I64(i) }
 }
 
+//FIXME have distinct i32 and u32 types
+impl From<i32> for Value {
+    fn from(i: i32) -> Self { Self::I64(i as i64) }
+}
+
 impl From<f64> for Value {
     fn from(f: f64) -> Self { Self::F64(f) }
 }
