@@ -501,8 +501,11 @@ impl IntoPy<PyObject> for Value {
             Value::I64(i) => {
                 return i.into_py(py);
             }
-            Value::U64(i) => {
-                return i.into_py(py);
+            Value::F64(f) => {
+                return f.into_py(py);
+            }
+            Value::U64(u) => {
+                return u.into_py(py);
             }
             Value::Map(m) => {
                 return m.into_py(py);
