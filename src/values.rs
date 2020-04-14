@@ -26,6 +26,7 @@ pub enum ValueType {
     String,
     I64,
     U64,
+    F64,
     Map,
     List,
     Bytes
@@ -38,6 +39,7 @@ pub enum Value {
     Str(String),
     I64(i64),
     U64(u64),
+    F64(f64),
     Map(HashMap<String, Value>),
     List(Vec<Value>),
     Bytes(Bytes)
@@ -75,6 +77,9 @@ impl Value {
             Value::U64(content)  => {
                 content > &other.clone().try_into().unwrap()
             }
+            Value::F64(content)  => {
+                content > &other.clone().try_into().unwrap()
+            }
             _ => { panic!("Type mismatch!"); }
         }
     }
@@ -88,7 +93,10 @@ impl Value {
                 content == &other.clone().try_into().unwrap()
             }
             Value::Bool(content) => {
-                content == &other.as_bool().unwrap()
+                content == &other.clone().try_into().unwrap()
+            }
+            Value::F64(content)  => {
+                content == &other.clone().try_into().unwrap()
             }
             _ => { panic!("Type mismatch!"); }
         }
@@ -100,6 +108,9 @@ impl Value {
                 content < &other.clone().try_into().unwrap()
             }
             Value::U64(content)  => {
+                content < &other.clone().try_into().unwrap()
+            }
+            Value::F64(content)  => {
                 content < &other.clone().try_into().unwrap()
             }
             _ => { panic!("Type mismatch!"); }
@@ -116,7 +127,10 @@ impl Value {
                 let val: u64 = other.clone().try_into().unwrap();
                 return (content + val).into();
             }
-
+            Value::F64(content)  => {
+                let val: f64 = other.clone().try_into().unwrap();
+                return (content + val).into();
+            }
             _ => { panic!("Type mismatch!"); }
         }
     }
@@ -310,8 +324,6 @@ impl TryInto<Bytes> for Value {
     }
 }
 
-
-
 impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
     type Error = ();
 
@@ -331,6 +343,18 @@ impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
     }
 }
 
+impl TryInto<bool> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<bool, ()> {
+        match self {
+            Value::Bool(content) => { Ok(content) }
+            _ => { Err(()) }
+        }
+    }
+}
+
+
 impl TryInto<i64> for Value {
     type Error = ();
 
@@ -338,6 +362,20 @@ impl TryInto<i64> for Value {
         match self {
             Value::I64(content) => { Ok(content) }
             Value::U64(content) => { Ok(content as i64) }
+            Value::F64(content) => { Ok(content as i64) }
+            _ => { Err(()) }
+        }
+    }
+}
+
+impl TryInto<f64> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<f64, ()> {
+        match self {
+            Value::I64(content) => { Ok(content as f64) }
+            Value::U64(content) => { Ok(content as f64) }
+            Value::F64(content) => { Ok(content) }
             _ => { Err(()) }
         }
     }
@@ -362,7 +400,8 @@ impl TryInto<String> for Value {
         match self {
             Value::Str(content) => { Ok(content) }
             Value::I64(i) => { Ok(format!("{}", i)) }
-            Value::U64(i) => { Ok(format!("{}", i)) }
+            Value::F64(f) => { Ok(format!("{}", f)) }
+            Value::U64(u) => { Ok(format!("{}", u)) }
             Value::Bytes(b) => { Ok(format!("{:#x}", &b)) }
             _ => { Err(()) }
         }
@@ -379,6 +418,10 @@ impl From<&u64> for Value {
 
 impl From<i64> for Value {
     fn from(i: i64) -> Self { Self::I64(i) }
+}
+
+impl From<f64> for Value {
+    fn from(f: f64) -> Self { Self::F64(f) }
 }
 
 impl From<u64> for Value {
