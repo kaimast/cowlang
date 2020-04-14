@@ -36,7 +36,8 @@ pub enum Token {
     Indent,
     Dedent,
     Colon,
-    If
+    If,
+    Else
 }
 
 lexer! {
@@ -51,6 +52,7 @@ lexer! {
     "in" => Token::In,
     "!" => Token::Not,
     "if" => Token::If,
+    "else" => Token::Else,
     ":" => Token::Colon,
     "true" => Token::BoolLiteral(true),
     "false" => Token::BoolLiteral(false),
@@ -123,6 +125,11 @@ impl<'a> Lexer<'a> {
                 is_newline = true;
                 current_icount = 0;
             }
+        }
+
+        // Add Dedent at end? 
+        if last_icount > 0 {
+            indents.insert(s.len(), false);
         }
 
         let position = 0;

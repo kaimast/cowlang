@@ -18,7 +18,7 @@ pub fn compile_string(input: &str) -> Program {
         Ok(p) => { p }
         Err((info, e)) => {
             match info {
-                Some((_token, span)) => {
+                Some((token, span)) => {
                     // Get interesting area
                     let mut pos = 0;
                     let mut start = 0;
@@ -59,9 +59,9 @@ pub fn compile_string(input: &str) -> Program {
                         end = pos;
                     }
 
-                    panic!("Got compile error [{} to {}]:\n\
+                    panic!("Got compile error at {:?} [{} to {}]:\n\
                             |    {}\n\
-                            |    {}", span.lo, span.hi, &input[start..end], msg);
+                            |    {}", token, span.lo, span.hi, &input[start..end], msg);
                 }
                 None => {
                     panic!("Got compile error: {:?}", e);

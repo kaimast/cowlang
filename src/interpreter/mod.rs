@@ -81,7 +81,7 @@ impl Interpreter {
         let mut control_flow = ControlFlow::Continue;
 
         let hdl = match expr {
-            Expr::If{cond, body} => {
+            Expr::IfElseRecursive{cond, body, else_branch} => {
                 if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
                     scopes.push();
 
@@ -94,8 +94,35 @@ impl Interpreter {
                     }
 
                     scopes.pop();
+                } else {
+                    return self.step(scopes, else_branch);
                 }
-                
+                Handle::None
+            }
+            Expr::IfElse{cond, body, else_branch} => {
+                if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
+                    scopes.push();
+
+                    for stmt in body {
+                        let (cflw, res) = self.step(scopes, &stmt);
+
+                        if cflw == ControlFlow::Return {
+                            return (cflw, res);
+                        }
+                    }
+
+                    scopes.pop();
+                } else if let Some(branch) = else_branch {
+                    scopes.push();
+
+                    for stmt in branch {
+                        let (cflw, res) = self.step(scopes, &stmt);
+
+                        if cflw == ControlFlow::Return {
+                            return (cflw, res);
+                        }
+                    }
+                }
                 Handle::None
             }
             Expr::AddEquals{lhs, rhs} => {

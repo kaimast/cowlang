@@ -174,4 +174,43 @@ fn if_statement() {
     assert_eq!(result, expected.into());
 }
 
+#[test]
+fn else_statement() {
+    let program = compile_string("\
+    let x = 5\n\
+    \n\
+    if x < 5:\
+  \n    return 0\n\
+    else:\
+  \n    return x+1\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected: i64 = 6;
+    assert_eq!(result, expected.into());
+}
+
+
+#[test]
+fn else_if_statement() {
+    let program = compile_string("\
+    let x = 5\n\
+    \n\
+    if x < 2:\
+  \n    return x+1\n\
+    else if x == 5:\
+  \n    return 1\n\
+    else:\
+  \n    return 0\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected: i64 = 1;
+    assert_eq!(result, expected.into());
+}
+
 

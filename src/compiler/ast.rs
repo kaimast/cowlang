@@ -41,7 +41,8 @@ pub enum Expr {
     GetMember(Box<ParseNode>, String),
     GetElement(Box<ParseNode>, Box<ParseNode>),
     Call(Box<ParseNode>, Vec<ParseNode>),
-    If{cond: Box<ParseNode>, body: Statements},
+    IfElse{cond: Box<ParseNode>, body: Statements, else_branch: Option<Statements>},
+    IfElseRecursive{cond: Box<ParseNode>, body: Statements, else_branch: Box<ParseNode>},
     Compare{ctype: CompareType, lhs: Box<ParseNode>, rhs: Box<ParseNode>},
     Return(Box<ParseNode>)
 }

@@ -39,24 +39,34 @@ parser! {
     assign: ParseNode {
         Return assign[rhs] => {
             (span!(), Expr::Return(Box::new(rhs)))
-        },
+        }
         Let Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
-        },
+        }
         Identifier(var) PlusEquals term[rhs] => {
             (span!(),
                 Expr::AddEquals{lhs: var, rhs: Box::new(rhs)})
         }
         Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
-        },
-        If assign[cond] Colon Newline Indent statements[body] Dedent => {
-            (span!(), Expr::If{cond: Box::new(cond), body})
         }
         For Identifier(target_name) In term[iter] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::ForIn{iter: Box::new(iter), target_name, body})
         }
+        If if_stmt[ifs] => ifs,
         op[o] => o
+    }
+
+    if_stmt: ParseNode {
+        assign[cond] Colon Newline Indent statements[body] Dedent => {
+            (span!(), Expr::IfElse{cond: Box::new(cond), body, else_branch: None})
+        }
+        assign[cond] Colon Newline Indent statements[body] Dedent Else Colon Newline Indent statements[else_branch] Dedent => {
+            (span!(), Expr::IfElse{cond: Box::new(cond), body, else_branch: Some(else_branch) })
+        }
+        assign[cond] Colon Newline Indent statements[body] Dedent Else If if_stmt[else_branch] => {
+            (span!(), Expr::IfElseRecursive{cond: Box::new(cond), body, else_branch: Box::new(else_branch) })
+        }
     }
 
     op: ParseNode {
