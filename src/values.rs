@@ -30,9 +30,11 @@ pub enum ValueType {
     F64,
     Map,
     List,
-    Bytes
+    Bytes,
 }
 
+/// Note this uses heap allocation for all non-primitive types
+/// To keep the enum size small
 #[ derive(Serialize, Deserialize, Clone, Debug, PartialEq) ]
 pub enum Value {
     None,
@@ -42,9 +44,9 @@ pub enum Value {
     U64(u64),
     F64(f64),
     U8(u8),
-    Map(HashMap<String, Value>),
+    Map(Box<HashMap<String, Value>>),
     List(Vec<Value>),
-    Bytes(Bytes)
+    Bytes(Box<Bytes>)
 }
 
 impl Value {
@@ -53,7 +55,7 @@ impl Value {
     }
 
     pub fn make_map() -> Value {
-        return Value::Map(HashMap::new());
+        return Value::Map(Box::new( HashMap::new() ));
     }
 
     pub fn make_list() -> Value {
@@ -246,7 +248,12 @@ impl Value {
 
     pub fn into_map(self) -> Option<HashMap<String, Value>> {
         match self {
-            Value::Map(content) => { Some(content) }
+            Value::Map(mut content) => {
+                let mut res = HashMap::new();
+                std::mem::swap(&mut res, content.as_mut());
+
+                Some(res)
+            }
             _ => { None }
         }
     }
@@ -304,7 +311,7 @@ impl From<String> for Value {
 }
 
 impl From<Bytes> for Value {
-    fn from(b: Bytes) -> Self { Self::Bytes(b) }
+    fn from(b: Bytes) -> Self { Self::Bytes(Box::new(b)) }
 }
 
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
@@ -324,7 +331,7 @@ impl TryInto<Bytes> for Value {
 
     fn try_into(self) -> Result<Bytes, ()> {
         match self {
-            Value::Bytes(b) => { Ok(b) }
+            Value::Bytes(b) => { Ok(b.as_ref().clone()) }
             _ => { Err(()) }
         }
     }
@@ -425,7 +432,7 @@ impl TryInto<String> for Value {
             Value::I64(i) => { Ok(format!("{}", i)) }
             Value::F64(f) => { Ok(format!("{}", f)) }
             Value::U64(u) => { Ok(format!("{}", u)) }
-            Value::Bytes(b) => { Ok(format!("{:#x}", &b)) }
+            Value::Bytes(b) => { Ok(format!("{:#x}", &*b)) }
             _ => { Err(()) }
         }
     }
