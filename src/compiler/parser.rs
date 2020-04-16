@@ -148,6 +148,9 @@ parser! {
         U64Literal(i) => {
             (span!(), Expr::U64(i))
         }
+        U8Literal(i) => {
+            (span!(), Expr::U8(i))
+        }
         BoolLiteral(b) => {
             (span!(), Expr::Bool(b))
         }

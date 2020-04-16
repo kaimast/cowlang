@@ -27,6 +27,7 @@ pub enum Expr {
     Var(String),
     I64(i64),
     U64(u64),
+    U8(u8),
     Bool(bool),
     String(String),
     List(Vec<ParseNode>),

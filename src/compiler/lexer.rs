@@ -8,6 +8,7 @@ pub enum Token {
     BoolLiteral(bool),
     I64Literal(i64),
     U64Literal(u64),
+    U8Literal(u8),
     StringLiteral(String),
     Comment(String),
     Identifier(String),
@@ -74,6 +75,16 @@ lexer! {
     "[0-9]+u" => {
         // cut off the u at the end
         Token::U64Literal(tok[..tok.len()-1].parse().unwrap())
+    },
+    "[0-9]+u8" => {
+        // cut off the u8 at the end
+        let i:i64 = tok[..tok.len()-2].parse().unwrap();
+        
+        if i < 0 || i > 256 {
+            panic!("Invalid u8 value: {}", i);
+        }
+
+        Token::U8Literal(i as u8)
     },
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     // Allow string literal with delimited by ' as well

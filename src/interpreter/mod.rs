@@ -303,6 +303,9 @@ impl Interpreter {
             Expr::U64(i) => {
                 Handle::Value( i.into() )
             }
+            Expr::U8(i) => {
+                Handle::Value( (*i).into() )
+            }
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;
                 self.step(scopes, &rhs).1

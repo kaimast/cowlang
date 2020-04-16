@@ -26,6 +26,7 @@ pub enum ValueType {
     String,
     I64,
     U64,
+    U8,
     F64,
     Map,
     List,
@@ -40,6 +41,7 @@ pub enum Value {
     I64(i64),
     U64(u64),
     F64(f64),
+    U8(u8),
     Map(HashMap<String, Value>),
     List(Vec<Value>),
     Bytes(Bytes)
@@ -129,6 +131,10 @@ impl Value {
             }
             Value::F64(content)  => {
                 let val: f64 = other.clone().try_into().unwrap();
+                return (content + val).into();
+            }
+             Value::U8(content) => {
+                let val: u8 = other.clone().try_into().unwrap();
                 return (content + val).into();
             }
             _ => { panic!("Type mismatch!"); }
@@ -303,13 +309,13 @@ impl From<Bytes> for Value {
 
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
     fn from(mut vec: Vec<T>) -> Value {
-        let mut res = Value::make_list();
+        let mut res = Vec::<Value>::new();
 
         for val in vec.drain(..) {
-            res.list_append(val.into()).unwrap();
+            res.push(val.into());
         }
 
-        res
+        Value::List(res)
     }
 }
 
@@ -354,6 +360,23 @@ impl TryInto<bool> for Value {
     }
 }
 
+impl TryInto<u8> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<u8, ()> {
+        match self {
+            Value::U8(content) => { Ok(content) }
+            Value::U64(content) => { 
+                if content < 256 {
+                    Ok(content as u8)
+                } else {
+                    panic!("integer overflow!");
+                }
+            }
+            _ => { Err(()) }
+        }
+    }
+}
 
 impl TryInto<i64> for Value {
     type Error = ();
@@ -408,12 +431,28 @@ impl TryInto<String> for Value {
     }
 }
 
+impl<T> From<&[T]> for Value  where T: Into<Value>+Clone {
+    fn from(slice: &[T]) -> Self {
+        let mut res = Vec::<Value>::new();
+
+        for val in slice {
+            res.push(val.clone().into())
+        }
+
+        Value::List(res)
+    }
+}
+
 impl From<&i64> for Value {
     fn from(i: &i64) -> Self { Self::I64(*i) }
 }
 
 impl From<&u64> for Value {
     fn from(i: &u64) -> Self { Self::U64(*i) }
+}
+
+impl From<u8> for Value {
+    fn from(u: u8) -> Self { Self::U8(u) }
 }
 
 impl From<i64> for Value {

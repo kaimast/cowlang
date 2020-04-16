@@ -74,15 +74,15 @@ fn to_string() {
 #[test]
 fn return_integer() {
     let program = compile_string("\
-        let _ = 1\n\
-        _ = _+4\n\
+        let _ = 1u8\n\
+        _ = _+4u8\n\
         return _\
     ");
 
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
-    let expected: i64 = 5;
+    let expected: u8 = 5;
     assert_eq!(result, expected.into());
 }
 
