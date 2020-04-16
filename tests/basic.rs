@@ -14,6 +14,19 @@ fn compile_comment() {
 }
 
 #[test]
+fn cast_integer() {
+    let program = compile_string("\
+        let val = 15u\n\
+        return val as i64\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, (15 as i64).into());
+}
+
+#[test]
 fn scoped_variables() {
     let program = compile_string("\
         let foo = 5\n\

@@ -5,6 +5,8 @@ use super::ast::*;
 use std::collections::HashMap;
 use plex::parser;
 
+use crate::values::ValueType;
+
 parser! {
     fn parse_(Token, Span);
 
@@ -80,6 +82,12 @@ parser! {
                 rhs: Box::new(rhs)
             })
         }
+        op[lhs] As TypeName(t) => {
+            (span!(), Expr::Cast{
+                value: Box::new(lhs), typename: t
+            })
+        }
+
         op[lhs] Greater term[rhs] => {
             (span!(), Expr::Compare{
                 ctype: CompareType::Greater, lhs:Box::new(lhs),

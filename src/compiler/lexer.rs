@@ -3,6 +3,8 @@ use super::ast::Span;
 use std::collections::BTreeMap;
 use std::cmp::Ordering;
 
+use crate::values::ValueType;
+
 #[ derive(Debug, Clone) ]
 pub enum Token {
     BoolLiteral(bool),
@@ -12,6 +14,8 @@ pub enum Token {
     StringLiteral(String),
     Comment(String),
     Identifier(String),
+    TypeName(ValueType),
+    As,
     Let,
     ToStr,
     Period,
@@ -49,6 +53,7 @@ lexer! {
     "str" => Token::ToStr,
     "return" => Token::Return,
     "not" => Token::Not,
+    "as" => Token::As,
     "for" => Token::For,
     "in" => Token::In,
     "!" => Token::Not,
@@ -86,6 +91,8 @@ lexer! {
 
         Token::U8Literal(i as u8)
     },
+    "u8" => Token::TypeName(ValueType::U8),
+    "i64" => Token::TypeName(ValueType::I64),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     // Allow string literal with delimited by ' as well
     r#"'[^']*'"# => Token::StringLiteral(tok[1..tok.len()-1].into()),
