@@ -536,31 +536,39 @@ impl IntoPy<PyObject> for Value {
     fn into_py(self, py: Python) -> PyObject {
         match self {
             Value::None => {
-                return py.None();
+                py.None()
             }
-            Value::Str(s) => {
-                return s.into_py(py);
+            Value::Str(string) => {
+                string.into_py(py)
             }
             Value::Bool(b) => {
-                return b.into_py(py);
+                b.into_py(py)
             }
-            Value::I64(i) => {
-                return i.into_py(py);
+            Value::I64(integer) => {
+                integer.into_py(py)
             }
             Value::F64(f) => {
-                return f.into_py(py);
+                f.into_py(py)
             }
             Value::U64(u) => {
-                return u.into_py(py);
+                u.into_py(py)
             }
-            Value::Map(m) => {
-                return m.into_py(py);
+            Value::U8(u) => {
+                u.into_py(py)
             }
-            Value::List(l) => {
-                return l.into_py(py);
+            Value::Map(mut map) => {
+                let map = map.as_mut();
+                let mut moved = HashMap::new();
+
+                std::mem::swap(map, &mut moved);
+                moved.clone().into_py(py)
             }
-            Value::Bytes(b) => {
-                return PyByteArray::new(py, &b).into();
+            Value::List(list) => {
+                list.into_py(py)
+            }
+            Value::Bytes(bytes) => {
+                let bytes = bytes.as_ref();
+                PyByteArray::new(py, bytes).into()
             }
         }
     }
