@@ -87,7 +87,6 @@ parser! {
                 value: Box::new(lhs), typename: t
             })
         }
-
         op[lhs] Greater term[rhs] => {
             (span!(), Expr::Compare{
                 ctype: CompareType::Greater, lhs:Box::new(lhs),
@@ -100,7 +99,7 @@ parser! {
                 rhs: Box::new(rhs)
             })
         }
-        ToStr OpenBracket term[inner] CloseBracket => {
+        ToStr OpenBracket op[inner] CloseBracket => {
             (span!(), Expr::ToStr(Box::new(inner)))
         }
         term[t] => t
@@ -123,11 +122,11 @@ parser! {
     }
 
     args: Vec<ParseNode> {
-        args[mut args] Comma term[t] => {
+        args[mut args] Comma op[t] => {
             args.push(t);
             args
         }
-        term[t] => {
+        op[t] => {
             vec!(t)
         }
         => vec![]
