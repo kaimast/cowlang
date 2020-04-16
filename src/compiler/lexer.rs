@@ -16,8 +16,10 @@ pub enum Token {
     Identifier(String),
     TypeName(ValueType),
     As,
+    Star,
     Let,
     ToStr,
+    Range,
     Period,
     OpenBracket,
     CloseBracket,
@@ -66,6 +68,7 @@ lexer! {
     "==" => Token::Equals,
     r"\." => Token::Period,
     "," => Token::Comma,
+    "range" => Token::Range,
     r"\(" => Token::OpenBracket,
     r"\)" => Token::CloseBracket,
     r"\[" => Token::OpenSquareBracket,
@@ -76,6 +79,7 @@ lexer! {
     r"\+=" => Token::PlusEquals,
     "<" => Token::Smaller,
     ">" => Token::Greater,
+    r"\*" => Token::Star,
     "[0-9]+" => Token::I64Literal(tok.parse().unwrap()),
     "[0-9]+u" => {
         // cut off the u at the end
@@ -99,7 +103,7 @@ lexer! {
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => Token::Identifier(tok.into()),
-    "." => panic!("unexpected character"),
+    "." => panic!("Lexer got unexpected character: {}", tok),
 }
 
 

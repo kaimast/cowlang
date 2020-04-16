@@ -39,6 +39,25 @@ fn cast_integer_str() {
     assert_eq!(result, "15".to_string().into());
 }
 
+#[test]
+fn range() {
+    let program = compile_string("\
+        let result = 0\n\
+        \n\
+        for i in range(3,5):\
+      \n    result += 2*i\n\
+        \n\
+        return result");
+
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:i64 = 14;
+
+    assert_eq!(result, expected.into());
+}
+
 
 
 #[test]

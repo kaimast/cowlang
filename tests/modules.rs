@@ -4,11 +4,14 @@ use cowlang::interpreter::{Callable, Handle};
 use std::rc::Rc;
 use std::convert::TryInto;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct TestModule {}
 
+#[derive(Debug)]
 struct GetAnswer {}
+#[derive(Debug)]
 struct PassString {}
+#[derive(Debug)]
 struct AddTwo {}
 
 impl Module for TestModule {
