@@ -27,6 +27,21 @@ fn cast_integer() {
 }
 
 #[test]
+fn cast_integer_str() {
+    let program = compile_string("\
+        let val = 15u\n\
+        return str(val as i64)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, "15".to_string().into());
+}
+
+
+
+#[test]
 fn scoped_variables() {
     let program = compile_string("\
         let foo = 5\n\
