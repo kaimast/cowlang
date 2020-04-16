@@ -1,5 +1,5 @@
 use crate::compiler::*;
-use crate::Value;
+use crate::values::{Value, ValueType};
 
 use std::convert::TryInto;
 use std::rc::Rc;
@@ -283,6 +283,25 @@ impl Interpreter {
 
                 Handle::Value( s.into() )
             }
+            Expr::Cast{value, typename} => {
+                match typename {
+                    ValueType::U8 => {
+                        let inner = self.step(scopes, value).1.unwrap_value();
+
+                        let val: u8 = inner.try_into().unwrap();
+                        Handle::Value( val.into() )
+                    }
+                    ValueType::I64 => {
+                        let inner = self.step(scopes, value).1.unwrap_value();
+
+                        let val: i64 = inner.try_into().unwrap();
+                        Handle::Value( val.into() )
+                    }
+                    _ => {
+                        todo!();
+                    }
+                }
+            }
             Expr::List(elems) => {
                 let mut result = Value::make_list();
 
@@ -302,6 +321,9 @@ impl Interpreter {
             }
             Expr::U64(i) => {
                 Handle::Value( i.into() )
+            }
+            Expr::U8(i) => {
+                Handle::Value( (*i).into() )
             }
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;

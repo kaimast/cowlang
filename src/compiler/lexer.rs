@@ -3,14 +3,19 @@ use super::ast::Span;
 use std::collections::BTreeMap;
 use std::cmp::Ordering;
 
+use crate::values::ValueType;
+
 #[ derive(Debug, Clone) ]
 pub enum Token {
     BoolLiteral(bool),
     I64Literal(i64),
     U64Literal(u64),
+    U8Literal(u8),
     StringLiteral(String),
     Comment(String),
     Identifier(String),
+    TypeName(ValueType),
+    As,
     Let,
     ToStr,
     Period,
@@ -48,6 +53,7 @@ lexer! {
     "str" => Token::ToStr,
     "return" => Token::Return,
     "not" => Token::Not,
+    "as" => Token::As,
     "for" => Token::For,
     "in" => Token::In,
     "!" => Token::Not,
@@ -75,6 +81,18 @@ lexer! {
         // cut off the u at the end
         Token::U64Literal(tok[..tok.len()-1].parse().unwrap())
     },
+    "[0-9]+u8" => {
+        // cut off the u8 at the end
+        let i:i64 = tok[..tok.len()-2].parse().unwrap();
+        
+        if i < 0 || i > 256 {
+            panic!("Invalid u8 value: {}", i);
+        }
+
+        Token::U8Literal(i as u8)
+    },
+    "u8" => Token::TypeName(ValueType::U8),
+    "i64" => Token::TypeName(ValueType::I64),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     // Allow string literal with delimited by ' as well
     r#"'[^']*'"# => Token::StringLiteral(tok[1..tok.len()-1].into()),

@@ -1,6 +1,8 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
+use crate::values::ValueType;
+
 #[ derive(Debug, Clone, Copy, Serialize, Deserialize) ]
 pub struct Span {
     pub hi: usize,
@@ -27,12 +29,14 @@ pub enum Expr {
     Var(String),
     I64(i64),
     U64(u64),
+    U8(u8),
     Bool(bool),
     String(String),
     List(Vec<ParseNode>),
     ToStr(Box<ParseNode>),
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
+    Cast{value: Box<ParseNode>, typename: ValueType},
     ForIn{iter: Box<ParseNode>, target_name: String, body: Statements},
     Add{lhs: Box<ParseNode>, rhs: Box<ParseNode>},
     Assign(String, Box<ParseNode>),

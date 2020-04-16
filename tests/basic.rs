@@ -1,4 +1,4 @@
-use crate::{Interpreter, compile_string, Value};
+use cowlang::{Interpreter, compile_string, Value};
 
 #[test]
 fn compile_comment() {
@@ -11,6 +11,19 @@ fn compile_comment() {
     let result = interpreter.run(&program);
 
     assert_eq!(result, Value::None);
+}
+
+#[test]
+fn cast_integer() {
+    let program = compile_string("\
+        let val = 15u\n\
+        return val as i64\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, (15 as i64).into());
 }
 
 #[test]
@@ -74,15 +87,15 @@ fn to_string() {
 #[test]
 fn return_integer() {
     let program = compile_string("\
-        let _ = 1\n\
-        _ = _+4\n\
+        let _ = 1u8\n\
+        _ = _+4u8\n\
         return _\
     ");
 
     let mut interpreter = Interpreter::default();
     let result = interpreter.run(&program);
 
-    let expected: i64 = 5;
+    let expected: u8 = 5;
     assert_eq!(result, expected.into());
 }
 

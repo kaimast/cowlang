@@ -26,12 +26,15 @@ pub enum ValueType {
     String,
     I64,
     U64,
+    U8,
     F64,
     Map,
     List,
-    Bytes
+    Bytes,
 }
 
+/// Note this uses heap allocation for all non-primitive types
+/// To keep the enum size small
 #[ derive(Serialize, Deserialize, Clone, Debug, PartialEq) ]
 pub enum Value {
     None,
@@ -40,9 +43,10 @@ pub enum Value {
     I64(i64),
     U64(u64),
     F64(f64),
-    Map(HashMap<String, Value>),
+    U8(u8),
+    Map(Box<HashMap<String, Value>>),
     List(Vec<Value>),
-    Bytes(Bytes)
+    Bytes(Box<Bytes>)
 }
 
 impl Value {
@@ -51,7 +55,7 @@ impl Value {
     }
 
     pub fn make_map() -> Value {
-        return Value::Map(HashMap::new());
+        return Value::Map(Box::new( HashMap::new() ));
     }
 
     pub fn make_list() -> Value {
@@ -129,6 +133,10 @@ impl Value {
             }
             Value::F64(content)  => {
                 let val: f64 = other.clone().try_into().unwrap();
+                return (content + val).into();
+            }
+             Value::U8(content) => {
+                let val: u8 = other.clone().try_into().unwrap();
                 return (content + val).into();
             }
             _ => { panic!("Type mismatch!"); }
@@ -240,7 +248,12 @@ impl Value {
 
     pub fn into_map(self) -> Option<HashMap<String, Value>> {
         match self {
-            Value::Map(content) => { Some(content) }
+            Value::Map(mut content) => {
+                let mut res = HashMap::new();
+                std::mem::swap(&mut res, content.as_mut());
+
+                Some(res)
+            }
             _ => { None }
         }
     }
@@ -298,18 +311,18 @@ impl From<String> for Value {
 }
 
 impl From<Bytes> for Value {
-    fn from(b: Bytes) -> Self { Self::Bytes(b) }
+    fn from(b: Bytes) -> Self { Self::Bytes(Box::new(b)) }
 }
 
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
     fn from(mut vec: Vec<T>) -> Value {
-        let mut res = Value::make_list();
+        let mut res = Vec::<Value>::new();
 
         for val in vec.drain(..) {
-            res.list_append(val.into()).unwrap();
+            res.push(val.into());
         }
 
-        res
+        Value::List(res)
     }
 }
 
@@ -318,7 +331,7 @@ impl TryInto<Bytes> for Value {
 
     fn try_into(self) -> Result<Bytes, ()> {
         match self {
-            Value::Bytes(b) => { Ok(b) }
+            Value::Bytes(b) => { Ok(b.as_ref().clone()) }
             _ => { Err(()) }
         }
     }
@@ -354,6 +367,23 @@ impl TryInto<bool> for Value {
     }
 }
 
+impl TryInto<u8> for Value {
+    type Error = ();
+
+    fn try_into(self) -> Result<u8, ()> {
+        match self {
+            Value::U8(content) => { Ok(content) }
+            Value::U64(content) => { 
+                if content < 256 {
+                    Ok(content as u8)
+                } else {
+                    panic!("integer overflow!");
+                }
+            }
+            _ => { Err(()) }
+        }
+    }
+}
 
 impl TryInto<i64> for Value {
     type Error = ();
@@ -402,9 +432,21 @@ impl TryInto<String> for Value {
             Value::I64(i) => { Ok(format!("{}", i)) }
             Value::F64(f) => { Ok(format!("{}", f)) }
             Value::U64(u) => { Ok(format!("{}", u)) }
-            Value::Bytes(b) => { Ok(format!("{:#x}", &b)) }
+            Value::Bytes(b) => { Ok(format!("{:#x}", &*b)) }
             _ => { Err(()) }
         }
+    }
+}
+
+impl<T> From<&[T]> for Value  where T: Into<Value>+Clone {
+    fn from(slice: &[T]) -> Self {
+        let mut res = Vec::<Value>::new();
+
+        for val in slice {
+            res.push(val.clone().into())
+        }
+
+        Value::List(res)
     }
 }
 
@@ -414,6 +456,10 @@ impl From<&i64> for Value {
 
 impl From<&u64> for Value {
     fn from(i: &u64) -> Self { Self::U64(*i) }
+}
+
+impl From<u8> for Value {
+    fn from(u: u8) -> Self { Self::U8(u) }
 }
 
 impl From<i64> for Value {
