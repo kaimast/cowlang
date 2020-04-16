@@ -121,6 +121,25 @@ impl Value {
         }
     }
 
+    pub fn multiply(&self, other: &Value) -> Value {
+        match &*self {
+            Value::I64(content) => {
+                let val: i64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            Value::U64(content)  => {
+                let val: u64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            Value::F64(content)  => {
+                let val: f64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            _ => { panic!("Multiplication not supported on this type!"); }
+        }
+    }
+
+
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
             Value::I64(content) => {
@@ -139,7 +158,7 @@ impl Value {
                 let val: u8 = other.clone().try_into().unwrap();
                 return (content + val).into();
             }
-            _ => { panic!("Type mismatch!"); }
+            _ => { panic!("Addition not supported on this type!"); }
         }
     }
 
@@ -148,7 +167,7 @@ impl Value {
             Value::Bool(content) => {
                 return (!content).into();
             }
-            _ => { panic!("Type mismatch!"); }
+            _ => { panic!("Negation not supported on this type!"); }
         }
     }
 

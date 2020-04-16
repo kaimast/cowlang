@@ -45,14 +45,14 @@ parser! {
         Let Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
         }
-        Identifier(var) PlusEquals term[rhs] => {
+        Identifier(var) PlusEquals op[rhs] => {
             (span!(),
                 Expr::AddEquals{lhs: var, rhs: Box::new(rhs)})
         }
         Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
         }
-        For Identifier(target_name) In term[iter] Colon Newline Indent statements[body] Dedent => {
+        For Identifier(target_name) In op[iter] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::ForIn{iter: Box::new(iter), target_name, body})
         }
         If if_stmt[ifs] => ifs,
@@ -75,6 +75,10 @@ parser! {
         op[lhs] Plus term[rhs] => {
             (span!(),
                 Expr::Add{lhs: Box::new(lhs), rhs: Box::new(rhs)})
+        }
+        op[lhs] Star term[rhs] => {
+            (span!(),
+                Expr::Multiply{lhs: Box::new(lhs), rhs: Box::new(rhs)})
         }
         op[lhs] Equals term[rhs] => {
             (span!(), Expr::Compare{
@@ -101,6 +105,12 @@ parser! {
         }
         ToStr OpenBracket op[inner] CloseBracket => {
             (span!(), Expr::ToStr(Box::new(inner)))
+        }
+        Range OpenBracket op[start] Comma op[end] CloseBracket => {
+            (span!(), Expr::Range{start: Box::new(start), end: Box::new(end), step: None})
+        }
+        Range OpenBracket op[start] Comma op[end] Comma op[step] CloseBracket => {
+            (span!(), Expr::Range{start: Box::new(start), end: Box::new(end), step: Some(Box::new(step))})
         }
         term[t] => t
     }
