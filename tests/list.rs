@@ -1,4 +1,4 @@
-use crate::{Interpreter, compile_string};
+use cowlang::{Interpreter, compile_string};
 
 #[test]
 fn return_list() {

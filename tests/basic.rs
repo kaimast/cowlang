@@ -1,4 +1,4 @@
-use crate::{Interpreter, compile_string, Value};
+use cowlang::{Interpreter, compile_string, Value};
 
 #[test]
 fn compile_comment() {

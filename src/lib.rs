@@ -11,6 +11,3 @@ pub use compiler::*;
 
 pub mod interpreter;
 pub use interpreter::{Interpreter, Module};
-
-#[cfg(test)]
-mod test;

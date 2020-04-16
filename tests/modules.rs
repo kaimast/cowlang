@@ -1,5 +1,5 @@
-use crate::{Interpreter, compile_string, Module, Value};
-use crate::interpreter::{Callable, Handle};
+use cowlang::{Interpreter, compile_string, Module, Value};
+use cowlang::interpreter::{Callable, Handle};
 
 use std::rc::Rc;
 use std::convert::TryInto;
