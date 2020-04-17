@@ -10,7 +10,7 @@ use std::collections::{hash_map, HashMap};
 mod scopes;
 use scopes::Scopes;
 
-pub trait Module: Debug {
+pub trait Module {
     fn get_member(&self, self_ptr: &Rc<dyn Module>, name: &str) -> Handle;
 }
 
@@ -73,7 +73,6 @@ enum ControlFlow {
     Return
 }
 
-#[ derive(Debug) ]
 pub enum Handle {
     None,
     Value(Value),
@@ -206,7 +205,7 @@ impl Interpreter {
                     }
                     Handle::Iter(i) => { i }
                     _ => {
-                        panic!("Cannot iterate {:?}", hdl);
+                        panic!("Cannot iterate!");
                     }
                 };
 
