@@ -3,13 +3,14 @@ use crate::values::{Value, ValueType};
 
 use std::convert::TryInto;
 use std::rc::Rc;
+use std::fmt::Debug;
 use std::mem;
 use std::collections::{hash_map, HashMap};
 
 mod scopes;
 use scopes::Scopes;
 
-pub trait Module {
+pub trait Module: Debug {
     fn get_member(&self, self_ptr: &Rc<dyn Module>, name: &str) -> Handle;
 }
 
@@ -19,8 +20,51 @@ pub struct Interpreter {
     variables: HashMap<String, Value>
 }
 
-pub trait Callable {
+pub trait Callable: Debug {
     fn call(&self, args: Vec<Value>) -> Value;
+}
+
+pub trait Iterable: Debug {
+    fn next(&mut self) -> Option<Value>;
+}
+
+#[ derive(Debug) ]
+struct ListIterable {
+    list: Vec<Value>
+}
+
+impl ListIterable {
+    pub fn new(list: Vec<Value>) -> Self {
+        Self{ list }
+    }
+}
+
+impl Iterable for ListIterable {
+    fn next(&mut self) -> Option<Value> {
+        if self.list.is_empty() {
+            None
+        } else {
+            Some( self.list.remove(0) )
+        }
+    }
+}
+
+#[derive(Debug) ]
+struct RangeIterable {
+    end: i64, step: i64, pos: i64
+}
+
+impl Iterable for RangeIterable {
+    fn next(&mut self) -> Option<Value> {
+        let val = self.pos;
+
+        if val < self.end {
+            self.pos = val + self.step;
+            Some(val.into())
+        } else {
+            None
+        }
+    }
 }
 
 #[ derive(Debug, Clone, PartialEq) ]
@@ -29,12 +73,14 @@ enum ControlFlow {
     Return
 }
 
+#[ derive(Debug) ]
 pub enum Handle {
     None,
     Value(Value),
     BuiltinCallable(Value, String),
     Object(Rc<dyn Module>),
-    Callable(Box<dyn Callable>)
+    Callable(Box<dyn Callable>),
+    Iter(Box<dyn Iterable>)
 }
 
 impl Handle {
@@ -107,6 +153,7 @@ impl Interpreter {
                         let (cflw, res) = self.step(scopes, &stmt);
 
                         if cflw == ControlFlow::Return {
+                            scopes.pop();
                             return (cflw, res);
                         }
                     }
@@ -119,9 +166,12 @@ impl Interpreter {
                         let (cflw, res) = self.step(scopes, &stmt);
 
                         if cflw == ControlFlow::Return {
+                            scopes.pop();
                             return (cflw, res);
                         }
                     }
+
+                    scopes.pop();
                 }
                 Handle::None
             }
@@ -142,27 +192,40 @@ impl Interpreter {
                 scopes.create_variable(var.clone(), val);
 
                 Handle::None
-            },
+            }
             Expr::ForIn{iter, target_name, body} => {
-                let iter = self.step(scopes, iter).1.unwrap_value();
+                let hdl = self.step(scopes, iter).1;
 
-                if let Value::List(content) = iter {
-                    for elem in content {
-                        scopes.push();
-                        scopes.create_variable(target_name.clone(), elem);
-
-                        for stmt in body {
-                            self.step(scopes, stmt);
+                let mut iter: Box<dyn Iterable> = match hdl {
+                    Handle::Value(val) => {
+                        if let Value::List(list) = val {
+                            Box::new( ListIterable::new(list) )
+                        } else {
+                            panic!("Cannot iterate {:?}", val);
                         }
-                        scopes.pop();
                     }
+                    Handle::Iter(i) => { i }
+                    _ => {
+                        panic!("Cannot iterate {:?}", hdl);
+                    }
+                };
 
-                    Handle::None
-                } else if let Value::Map(_) = iter {
-                    todo!();
-                } else {
-                    panic!("Cannot iterate: not a list");
+                while let Some(val) = iter.next() {
+                    scopes.push();
+                    scopes.create_variable(target_name.clone(), val);
+
+                    for stmt in body {
+                        let (cflw, res) = self.step(scopes, &stmt);
+
+                        if cflw == ControlFlow::Return {
+                            scopes.pop();
+                            return (cflw, res);
+                        }
+                    }
+                    scopes.pop();
                 }
+
+                Handle::None
             }
             Expr::Var(var) => {
                 scopes.get(var)
@@ -172,6 +235,12 @@ impl Interpreter {
                 let right = self.step(scopes, &rhs).1.unwrap_value();
 
                 Handle::Value( left.add(&right) )
+            }
+            Expr::Multiply{lhs, rhs} => {
+                let left = self.step(scopes, &lhs).1.unwrap_value();
+                let right = self.step(scopes, &rhs).1.unwrap_value();
+
+                Handle::Value( left.multiply(&right) )
             }
             Expr::Compare{ctype, lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
@@ -271,6 +340,28 @@ impl Interpreter {
             }
             Expr::String(s) => {
                 Handle::Value( s.clone().into() )
+            }
+            Expr::Range{start, end, step} => {
+                let start = self.step(scopes, start).1.unwrap_value();
+                let end = self.step(scopes, end).1.unwrap_value();
+
+                let start: i64 = start.try_into().unwrap();
+                let end: i64 = end.try_into().unwrap();
+
+                let step: i64 = if let Some(s) = step {
+                    let step = self.step(scopes, s).1.unwrap_value();
+                    step.try_into().unwrap()
+                } else {
+                    1
+                };
+
+                if start > end {
+                    panic!("invalid range: {} to {}", start, end);
+                } else if step <= 0 {
+                    panic!("invalid step size: {}", step);
+                }
+
+                Handle::Iter( Box::new( RangeIterable{ end, step, pos: start } ))
             }
             Expr::ToStr(inner) => {
                 let val = self.step(scopes, inner).1.unwrap_value();

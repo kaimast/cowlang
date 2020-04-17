@@ -16,8 +16,10 @@ pub enum Token {
     Identifier(String),
     TypeName(ValueType),
     As,
+    Star,
     Let,
     ToStr,
+    Range,
     Period,
     OpenBracket,
     CloseBracket,
@@ -66,6 +68,7 @@ lexer! {
     "==" => Token::Equals,
     r"\." => Token::Period,
     "," => Token::Comma,
+    "range" => Token::Range,
     r"\(" => Token::OpenBracket,
     r"\)" => Token::CloseBracket,
     r"\[" => Token::OpenSquareBracket,
@@ -76,6 +79,7 @@ lexer! {
     r"\+=" => Token::PlusEquals,
     "<" => Token::Smaller,
     ">" => Token::Greater,
+    r"\*" => Token::Star,
     "[0-9]+" => Token::I64Literal(tok.parse().unwrap()),
     "[0-9]+u" => {
         // cut off the u at the end
@@ -99,7 +103,7 @@ lexer! {
     r"\#[^\n]*" => Token::Comment(tok.into()),
     "let" => Token::Let,
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => Token::Identifier(tok.into()),
-    "." => panic!("unexpected character"),
+    "." => panic!("Lexer got unexpected character: {}", tok),
 }
 
 
@@ -110,32 +114,40 @@ pub struct Lexer<'a> {
     at_end: bool,
     empty_line: bool,
 
-    indents: BTreeMap<usize, bool>,
+    indents: BTreeMap<usize, i32>,
     position: usize
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(s: &'a str) -> Lexer<'a> {
-        let mut indents = BTreeMap::new();
+        let mut indents = BTreeMap::<usize, i32>::new();
         let mut is_newline = false;
         let mut current_icount = 0;
-        let mut last_icount = 0;
+        let mut last_icount = vec![0];
 
         for (pos, c) in s.chars().enumerate() {
             if c == ' ' && is_newline {
                 current_icount += 1;
             } else if c != ' ' && is_newline {
-                match current_icount.cmp(&last_icount) {
-                    Ordering::Less => {
-                        indents.insert(pos, false);
-                        last_icount = current_icount;
+                loop {
+                    let top = last_icount[last_icount.len()-1];
+
+                    match current_icount.cmp(&top) {
+                        Ordering::Less => {
+                            *indents.entry(pos).or_insert(0) -= 2;
+                            last_icount.pop();
+                        }
+                        Ordering::Greater => {
+                            *indents.entry(pos).or_insert(0) += 2;
+                            last_icount.push(current_icount);
+                            break;
+                        }
+                        _ => {
+                            break;
+                        }
                     }
-                    Ordering::Greater => {
-                        indents.insert(pos, true);
-                        last_icount = current_icount;
-                    }
-                    _ => {}
                 }
+
                 is_newline = false;
             }
 
@@ -145,9 +157,10 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        // Add Dedent at end? 
-        if last_icount > 0 {
-            indents.insert(s.len(), false);
+        // Add Dedent at end?
+        while last_icount.len() > 1 {
+            last_icount.pop();
+            *indents.entry(s.len()).or_insert(0) -= 2;
         }
 
         let position = 0;
@@ -165,22 +178,40 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<(Token, Span)> {
         // skip over whitespace and comments 
         loop {
-            if let Some(entry) = self.indents.first_entry() {
+            if let Some(mut entry) = self.indents.first_entry() {
                 let ipos = *entry.key();
 
                 match ipos.cmp(&self.position) {
                     Ordering::Equal => {
-                        let is_indent = *entry.get();
+                        let token = {
+                            let e = entry.get_mut();
+
+                            let token = if *e < 0 {
+                                let even = *e % 2 == 0;
+                                *e += 1;
+
+                                if even {
+                                    Token::Newline
+                                } else {
+                                    Token::Dedent
+                                }
+                            } else if *e > 0 {
+                                *e -= 2;
+                                Token::Indent
+                            } else {
+                                panic!("invalid state");
+                            };
+
+                            if *e == 0 {
+                                entry.remove_entry();
+                            }
+
+                            token
+                        };
+
                         let span = Span{ lo: ipos, hi: ipos };
-
-                        entry.remove_entry();
                         self.empty_line = false;
-
-                        if is_indent {
-                            return Some((Token::Indent, span));
-                        } else {
-                            return Some((Token::Dedent, span));
-                        }
+                        return Some((token, span));
                     }
                     Ordering::Less => {
                         panic!("invalid state!");

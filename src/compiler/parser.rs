@@ -5,8 +5,6 @@ use super::ast::*;
 use std::collections::HashMap;
 use plex::parser;
 
-use crate::values::ValueType;
-
 parser! {
     fn parse_(Token, Span);
 
@@ -20,7 +18,7 @@ parser! {
 
     program: Program {
         linebreak => Program{ stmts: vec!() },
-        statements[st] => Program{ stmts: st }
+        statements[stmts] => Program{ stmts }
     }
 
     statements: Vec<ParseNode> {
@@ -45,14 +43,14 @@ parser! {
         Let Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::AssignNew(var, Box::new(rhs)))
         }
-        Identifier(var) PlusEquals term[rhs] => {
+        Identifier(var) PlusEquals op[rhs] => {
             (span!(),
                 Expr::AddEquals{lhs: var, rhs: Box::new(rhs)})
         }
         Identifier(var) Assign assign[rhs] => {
             (span!(), Expr::Assign(var, Box::new(rhs)))
         }
-        For Identifier(target_name) In term[iter] Colon Newline Indent statements[body] Dedent => {
+        For Identifier(target_name) In op[iter] Colon Newline Indent statements[body] Dedent => {
             (span!(), Expr::ForIn{iter: Box::new(iter), target_name, body})
         }
         If if_stmt[ifs] => ifs,
@@ -76,6 +74,10 @@ parser! {
             (span!(),
                 Expr::Add{lhs: Box::new(lhs), rhs: Box::new(rhs)})
         }
+        op[lhs] Star term[rhs] => {
+            (span!(),
+                Expr::Multiply{lhs: Box::new(lhs), rhs: Box::new(rhs)})
+        }
         op[lhs] Equals term[rhs] => {
             (span!(), Expr::Compare{
                 ctype: CompareType::Equals, lhs: Box::new(lhs),
@@ -87,7 +89,6 @@ parser! {
                 value: Box::new(lhs), typename: t
             })
         }
-
         op[lhs] Greater term[rhs] => {
             (span!(), Expr::Compare{
                 ctype: CompareType::Greater, lhs:Box::new(lhs),
@@ -100,8 +101,14 @@ parser! {
                 rhs: Box::new(rhs)
             })
         }
-        ToStr OpenBracket term[inner] CloseBracket => {
+        ToStr OpenBracket op[inner] CloseBracket => {
             (span!(), Expr::ToStr(Box::new(inner)))
+        }
+        Range OpenBracket op[start] Comma op[end] CloseBracket => {
+            (span!(), Expr::Range{start: Box::new(start), end: Box::new(end), step: None})
+        }
+        Range OpenBracket op[start] Comma op[end] Comma op[step] CloseBracket => {
+            (span!(), Expr::Range{start: Box::new(start), end: Box::new(end), step: Some(Box::new(step))})
         }
         term[t] => t
     }
@@ -123,11 +130,11 @@ parser! {
     }
 
     args: Vec<ParseNode> {
-        args[mut args] Comma term[t] => {
+        args[mut args] Comma op[t] => {
             args.push(t);
             args
         }
-        term[t] => {
+        op[t] => {
             vec!(t)
         }
         => vec![]

@@ -4,11 +4,14 @@ use cowlang::interpreter::{Callable, Handle};
 use std::rc::Rc;
 use std::convert::TryInto;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct TestModule {}
 
+#[derive(Debug)]
 struct GetAnswer {}
+#[derive(Debug)]
 struct PassString {}
+#[derive(Debug)]
 struct AddTwo {}
 
 impl Module for TestModule {
@@ -73,6 +76,29 @@ fn constant_function() {
     let expected: i64 = 42;
     assert_eq!(result, expected.into());
 }
+
+
+#[test]
+fn if_constant_function() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    if test_module.get_answer() > 40:\
+  \n    return true\n\
+  \n\
+    return false
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("test_module"), module);
+
+    let result = interpreter.run(&program);
+
+    let expected: bool = true;
+    assert_eq!(result, expected.into());
+}
+
+
 
 #[test]
 fn get_constant() {

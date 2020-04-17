@@ -27,10 +27,63 @@ fn cast_integer() {
 }
 
 #[test]
+fn cast_integer_str() {
+    let program = compile_string("\
+        let val = 15u\n\
+        return str(val as i64)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, "15".to_string().into());
+}
+
+#[test]
+fn range() {
+    let program = compile_string("\
+        let result = 0\n\
+        \n\
+        for i in range(3,5):\
+      \n    result += 2*i\n\
+        # FIXME this newline is needed \n\
+        return result");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:i64 = 14;
+
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn double_indent() {
+    let program = compile_string("\
+        let result = 0\n\
+        \n\
+        for i in range(3,5):\
+      \n     if i == 4:\
+      \n         return i\n\
+        \n\
+        return result");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:i64 = 4;
+
+    assert_eq!(result, expected.into());
+}
+
+
+
+
+#[test]
 fn scoped_variables() {
     let program = compile_string("\
         let foo = 5\n\
-        
+      \n\
         if true:\
       \n    let foo = 10\n\
         \n\
@@ -81,8 +134,6 @@ fn to_string() {
     let expected = String::from("51431");
     assert_eq!(result, expected.into());
 }
-
-
 
 #[test]
 fn return_integer() {

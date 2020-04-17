@@ -121,6 +121,25 @@ impl Value {
         }
     }
 
+    pub fn multiply(&self, other: &Value) -> Value {
+        match &*self {
+            Value::I64(content) => {
+                let val: i64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            Value::U64(content)  => {
+                let val: u64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            Value::F64(content)  => {
+                let val: f64 = other.clone().try_into().unwrap();
+                return (content * val).into();
+            }
+            _ => { panic!("Multiplication not supported on this type!"); }
+        }
+    }
+
+
     pub fn add(&self, other: &Value) -> Value {
         match &*self {
             Value::I64(content) => {
@@ -139,7 +158,7 @@ impl Value {
                 let val: u8 = other.clone().try_into().unwrap();
                 return (content + val).into();
             }
-            _ => { panic!("Type mismatch!"); }
+            _ => { panic!("Addition not supported on this type!"); }
         }
     }
 
@@ -148,7 +167,7 @@ impl Value {
             Value::Bool(content) => {
                 return (!content).into();
             }
-            _ => { panic!("Type mismatch!"); }
+            _ => { panic!("Negation not supported on this type!"); }
         }
     }
 
@@ -536,31 +555,39 @@ impl IntoPy<PyObject> for Value {
     fn into_py(self, py: Python) -> PyObject {
         match self {
             Value::None => {
-                return py.None();
+                py.None()
             }
-            Value::Str(s) => {
-                return s.into_py(py);
+            Value::Str(string) => {
+                string.into_py(py)
             }
             Value::Bool(b) => {
-                return b.into_py(py);
+                b.into_py(py)
             }
-            Value::I64(i) => {
-                return i.into_py(py);
+            Value::I64(integer) => {
+                integer.into_py(py)
             }
             Value::F64(f) => {
-                return f.into_py(py);
+                f.into_py(py)
             }
             Value::U64(u) => {
-                return u.into_py(py);
+                u.into_py(py)
             }
-            Value::Map(m) => {
-                return m.into_py(py);
+            Value::U8(u) => {
+                u.into_py(py)
             }
-            Value::List(l) => {
-                return l.into_py(py);
+            Value::Map(mut map) => {
+                let map = map.as_mut();
+                let mut moved = HashMap::new();
+
+                std::mem::swap(map, &mut moved);
+                moved.clone().into_py(py)
             }
-            Value::Bytes(b) => {
-                return PyByteArray::new(py, &b).into();
+            Value::List(list) => {
+                list.into_py(py)
+            }
+            Value::Bytes(bytes) => {
+                let bytes = bytes.as_ref();
+                PyByteArray::new(py, bytes).into()
             }
         }
     }
