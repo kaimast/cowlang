@@ -20,7 +20,7 @@ parser! {
 
     program: Program {
         linebreak => Program{ stmts: vec!() },
-        statements[st] => Program{ stmts: st }
+        statements[stmts] => Program{ stmts }
     }
 
     statements: Vec<ParseNode> {

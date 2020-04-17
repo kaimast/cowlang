@@ -153,6 +153,7 @@ impl Interpreter {
                         let (cflw, res) = self.step(scopes, &stmt);
 
                         if cflw == ControlFlow::Return {
+                            scopes.pop();
                             return (cflw, res);
                         }
                     }
@@ -165,9 +166,12 @@ impl Interpreter {
                         let (cflw, res) = self.step(scopes, &stmt);
 
                         if cflw == ControlFlow::Return {
+                            scopes.pop();
                             return (cflw, res);
                         }
                     }
+
+                    scopes.pop();
                 }
                 Handle::None
             }
@@ -211,7 +215,12 @@ impl Interpreter {
                     scopes.create_variable(target_name.clone(), val);
 
                     for stmt in body {
-                        self.step(scopes, stmt);
+                        let (cflw, res) = self.step(scopes, &stmt);
+
+                        if cflw == ControlFlow::Return {
+                            scopes.pop();
+                            return (cflw, res);
+                        }
                     }
                     scopes.pop();
                 }
