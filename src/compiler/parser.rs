@@ -5,8 +5,6 @@ use super::ast::*;
 use std::collections::HashMap;
 use plex::parser;
 
-use crate::values::ValueType;
-
 parser! {
     fn parse_(Token, Span);
 
