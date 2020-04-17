@@ -47,6 +47,98 @@ pub enum Token {
     Else
 }
 
+pub fn parse_indents(s: &str) -> BTreeMap::<usize, i32> {
+    let mut indents = BTreeMap::new();
+    let mut is_newline = false;
+    let mut current_icount = 0;
+    let mut last_icount = vec![0];
+
+    for (pos, c) in s.chars().enumerate() {
+        if c == ' ' && is_newline {
+            current_icount += 1;
+        } else if c != ' ' && is_newline {
+            loop {
+                let top = last_icount[last_icount.len()-1];
+
+                match current_icount.cmp(&top) {
+                    Ordering::Less => {
+                        *indents.entry(pos).or_insert(0) -= 2;
+                        last_icount.pop();
+                    }
+                    Ordering::Greater => {
+                        *indents.entry(pos).or_insert(0) += 2;
+                        last_icount.push(current_icount);
+                        break;
+                    }
+                    _ => {
+                        break;
+                    }
+                }
+            }
+
+            is_newline = false;
+        }
+
+        if c == '\n' {
+            is_newline = true;
+            current_icount = 0;
+        }
+    }
+
+    // Add Dedent at end?
+    while last_icount.len() > 1 {
+        last_icount.pop();
+        *indents.entry(s.len()).or_insert(0) -= 2;
+    }
+
+    indents
+}
+
+pub enum IndentResult {
+    Indent,
+    Dedent,
+    Newline
+}
+
+pub fn get_next_indent(position: usize, indents: &mut BTreeMap::<usize, i32>) -> Option<IndentResult> {
+
+    let mut entry = if let Some(entry) = indents.first_entry() {
+        entry
+    } else {
+        return None;
+    };
+
+    let ipos = *entry.key();
+
+    if ipos != position {
+        return None;
+    }
+
+    let e = entry.get_mut();
+
+    let token = if *e < 0 {
+        let even = *e % 2 == 0;
+        *e += 1;
+
+        if even {
+            IndentResult::Newline
+        } else {
+            IndentResult::Dedent
+        }
+    } else if *e > 0 {
+        *e -= 2;
+        IndentResult::Indent
+    } else {
+        panic!("invalid state");
+    };
+
+    if *e == 0 {
+        entry.remove_entry();
+    }
+
+    Some(token)
+}
+
 lexer! {
     fn take_token(tok: 'a) -> Token;
 
@@ -120,48 +212,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(s: &'a str) -> Lexer<'a> {
-        let mut indents = BTreeMap::<usize, i32>::new();
-        let mut is_newline = false;
-        let mut current_icount = 0;
-        let mut last_icount = vec![0];
-
-        for (pos, c) in s.chars().enumerate() {
-            if c == ' ' && is_newline {
-                current_icount += 1;
-            } else if c != ' ' && is_newline {
-                loop {
-                    let top = last_icount[last_icount.len()-1];
-
-                    match current_icount.cmp(&top) {
-                        Ordering::Less => {
-                            *indents.entry(pos).or_insert(0) -= 2;
-                            last_icount.pop();
-                        }
-                        Ordering::Greater => {
-                            *indents.entry(pos).or_insert(0) += 2;
-                            last_icount.push(current_icount);
-                            break;
-                        }
-                        _ => {
-                            break;
-                        }
-                    }
-                }
-
-                is_newline = false;
-            }
-
-            if c == '\n' {
-                is_newline = true;
-                current_icount = 0;
-            }
-        }
-
-        // Add Dedent at end?
-        while last_icount.len() > 1 {
-            last_icount.pop();
-            *indents.entry(s.len()).or_insert(0) -= 2;
-        }
+        let indents = parse_indents(s);
 
         let position = 0;
         let at_start = true;
@@ -178,46 +229,18 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<(Token, Span)> {
         // skip over whitespace and comments 
         loop {
-            if let Some(mut entry) = self.indents.first_entry() {
-                let ipos = *entry.key();
+            if let Some(res) = get_next_indent(self.position, &mut self.indents) {
+                let token = match res {
+                    IndentResult::Newline => Token::Newline,
+                    IndentResult::Indent => Token::Indent,
+                    IndentResult::Dedent => Token::Dedent
+                };
 
-                match ipos.cmp(&self.position) {
-                    Ordering::Equal => {
-                        let token = {
-                            let e = entry.get_mut();
+                let ipos = self.position;
+                let span = Span{ lo: ipos, hi: ipos };
 
-                            let token = if *e < 0 {
-                                let even = *e % 2 == 0;
-                                *e += 1;
-
-                                if even {
-                                    Token::Newline
-                                } else {
-                                    Token::Dedent
-                                }
-                            } else if *e > 0 {
-                                *e -= 2;
-                                Token::Indent
-                            } else {
-                                panic!("invalid state");
-                            };
-
-                            if *e == 0 {
-                                entry.remove_entry();
-                            }
-
-                            token
-                        };
-
-                        let span = Span{ lo: ipos, hi: ipos };
-                        self.empty_line = false;
-                        return Some((token, span));
-                    }
-                    Ordering::Less => {
-                        panic!("invalid state!");
-                    }
-                    _ => {}
-                }
+                self.empty_line = false;
+                return Some((token, span));
             }
 
             let (tok, span) = if let Some((tok, new_remaining)) = take_token(self.remaining) {

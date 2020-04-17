@@ -7,6 +7,8 @@ pub use ast::*;
 use lexer::Lexer;
 use parser::parse;
 
+pub use lexer::parse_indents;
+
 pub fn compile_string(input: &str) -> Program {
     #[ cfg(feature="verbose") ]
     let lexer = Lexer::new(input).inspect(|elem| println!("{:?}", elem));
