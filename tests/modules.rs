@@ -77,6 +77,29 @@ fn constant_function() {
     assert_eq!(result, expected.into());
 }
 
+
+#[test]
+fn if_constant_function() {
+    let module = Rc::new(TestModule::default());
+
+    let program = compile_string("\
+    if test_module.get_answer() > 40:\
+  \n    return true\n\
+  \n\
+    return false
+    ");
+
+    let mut interpreter = Interpreter::default();
+    interpreter.register_module(String::from("test_module"), module);
+
+    let result = interpreter.run(&program);
+
+    let expected: bool = true;
+    assert_eq!(result, expected.into());
+}
+
+
+
 #[test]
 fn get_constant() {
     let module = Rc::new(TestModule::default());
