@@ -20,15 +20,14 @@ pub struct Interpreter {
     variables: HashMap<String, Value>
 }
 
-pub trait Callable: Debug {
+pub trait Callable {
     fn call(&self, args: Vec<Value>) -> Value;
 }
 
-pub trait Iterable: Debug {
+pub trait Iterable {
     fn next(&mut self) -> Option<Value>;
 }
 
-#[ derive(Debug) ]
 struct ListIterable {
     list: Vec<Value>
 }
@@ -49,7 +48,6 @@ impl Iterable for ListIterable {
     }
 }
 
-#[derive(Debug) ]
 struct RangeIterable {
     end: i64, step: i64, pos: i64
 }
