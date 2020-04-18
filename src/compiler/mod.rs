@@ -9,7 +9,7 @@ use std::fmt::Debug;
 use lexer::Lexer;
 use parser::parse;
 
-pub use lexer::{IndentResult, parse_indents};
+pub use lexer::{IndentResult, parse_indents, get_next_indent};
 
 pub fn generate_compile_error<T>(input: &str, info: Option<(T, Span)>, e: &str) -> String
         where T: Debug {
