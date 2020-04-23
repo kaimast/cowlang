@@ -92,7 +92,16 @@ impl Handle {
 
 impl Interpreter {
     pub fn register_module(&mut self, name: String, module: Rc<dyn Module>) {
-        self.modules.insert(name, module);
+        if name.is_empty() {
+            //TODO check for other invalid identifiers (e.g. one containing spaces)
+            panic!("Cannot register module with invalid name: {}", name);
+        }
+
+        let result = self.modules.insert(name, module);
+
+        if result.is_some() {
+            panic!("Module with the same name already existed");
+        }
     }
 
     pub fn set_value(&mut self, name: String, value: Value) {
