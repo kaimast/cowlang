@@ -89,3 +89,20 @@ fn iterate_list() {
     let expected:u64 = 20;
     assert_eq!(result, expected.into());
 }
+
+#[test]
+fn list_append() {
+    let program = compile_string("\
+        let l = [215799, 14, 141, 5115]\n\
+        l.append(555 as u64)\n\
+        return l[4]\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected:u64 = 555;
+    assert_eq!(result, expected.into());
+}
+
+

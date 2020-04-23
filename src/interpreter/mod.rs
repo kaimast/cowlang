@@ -5,6 +5,7 @@ use std::convert::TryInto;
 use std::rc::Rc;
 use std::fmt::Debug;
 use std::mem;
+use std::cell::Cell;
 use std::collections::{hash_map, HashMap};
 
 mod scopes;
@@ -17,7 +18,7 @@ pub trait Module {
 #[ derive(Default) ]
 pub struct Interpreter {
     modules: HashMap<String, Rc<dyn Module>>,
-    variables: HashMap<String, Value>
+    variables: HashMap<String, Rc<Cell<Value>>>
 }
 
 pub trait Callable {
@@ -73,8 +74,8 @@ enum ControlFlow {
 
 pub enum Handle {
     None,
-    Value(Value),
-    BuiltinCallable(Value, String),
+    Value(Rc<Cell<Value>>),
+    BuiltinCallable(Rc<Cell<Value>>, String),
     Object(Rc<dyn Module>),
     Callable(Box<dyn Callable>),
     Iter(Box<dyn Iterable>)
@@ -83,10 +84,28 @@ pub enum Handle {
 impl Handle {
     pub fn unwrap_value(self) -> Value {
         if let Handle::Value(value) = self {
-            value
+            let mut val_cpy = Cell::new(Value::None);
+
+            val_cpy.swap(&*value);
+            let result = val_cpy.get_mut().clone();
+            val_cpy.swap(&*value);
+
+            result
         } else {
             panic!("Handle is not a value!");
         }
+    }
+
+    pub fn unwrap_value_ref(self) -> Rc<Cell<Value>> {
+        if let Handle::Value(value) = self {
+            value.clone()
+        } else {
+            panic!("Handle is not a value!");
+        }
+    }
+ 
+    pub fn wrap_value(val: Value) -> Self {
+        Handle::Value( Rc::new( Cell::new(val) ) )
     }
 }
 
@@ -105,7 +124,7 @@ impl Interpreter {
     }
 
     pub fn set_value(&mut self, name: String, value: Value) {
-        self.variables.insert(name, value);
+        self.variables.insert(name, Rc::new( Cell::new(value) ));
     }
 
     pub fn run(&mut self, program: &Program) -> Value {
@@ -204,11 +223,19 @@ impl Interpreter {
 
                 let mut iter: Box<dyn Iterable> = match hdl {
                     Handle::Value(val) => {
-                        if let Value::List(list) = val {
-                            Box::new( ListIterable::new(list) )
+                        let mut val_cpy = Cell::new(Value::None);
+                        val_cpy.swap(&*val);
+
+                        let res = if let Value::List(list) = val_cpy.get_mut() {
+                            Box::new( ListIterable::new(list.clone()) )
                         } else {
-                            panic!("Cannot iterate {:?}", val);
-                        }
+                            let mut val_cpy = Cell::new(Value::None);
+                            val_cpy.swap(&*val);
+                            panic!("Cannot iterate {:?}", val_cpy.get_mut());
+                        };
+
+                        val_cpy.swap(&*val);
+                        res
                     }
                     Handle::Iter(i) => { i }
                     _ => {
@@ -240,13 +267,13 @@ impl Interpreter {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
 
-                Handle::Value( left.add(&right) )
+                Handle::wrap_value( left.add(&right) )
             }
             Expr::Multiply{lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
 
-                Handle::Value( left.multiply(&right) )
+                Handle::wrap_value( left.multiply(&right) )
             }
             Expr::Compare{ctype, lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
@@ -264,11 +291,11 @@ impl Interpreter {
                     }
                 };
 
-                Handle::Value( result.into() )
+                Handle::wrap_value( result.into() )
             }
             Expr::Not(rhs) => {
                 let right = self.step(scopes, &rhs).1.unwrap_value();
-                Handle::Value( right.negate() )
+                Handle::wrap_value( right.negate() )
             }
             Expr::Assign(var, rhs) => {
                 let val = self.step(scopes, rhs).1.unwrap_value();
@@ -300,27 +327,49 @@ impl Interpreter {
 
                 for arg in args {
                     if let Handle::Value(v) = self.step(scopes, arg).1 {
-                        argv.push(v);
+                        let mut val_cpy = Cell::new(Value::None);
+                        val_cpy.swap(&*v);
+ 
+                        argv.push(val_cpy.get_mut().clone());
+                        val_cpy.swap(&*v);
                     } else {
                         panic!("Argument is not a value!");
                     }
                 }
 
                 if let Handle::Callable(c) = res {
-                    Handle::Value(c.call(argv))
+                    Handle::wrap_value(c.call(argv))
                 } else if let Handle::BuiltinCallable(val, name) = res {
                     if name == "len" {
-                        let len = val.num_children() as u64;
-                        Handle::Value(len.into())
+                        let mut val_cpy = Cell::new(Value::None);
+                        val_cpy.swap(&*val);
+                        let len = val_cpy.get_mut().num_children();
+                        val_cpy.swap(&*val);
+
+                        Handle::wrap_value(len.into())
                     } else if name == "values" {
-                        let mut map = val.into_map().unwrap();
+                        let mut val_cpy = Cell::new(Value::None);
+                        val_cpy.swap(&*val);
+                        let mut map = val_cpy.get_mut().clone().into_map().unwrap();
+                        val_cpy.swap(&*val);
+
                         let mut vals = Value::make_list();
 
                         for (_, v) in map.drain() {
                             vals.list_append(v).unwrap();
                         }
 
-                        Handle::Value(vals)
+                        Handle::wrap_value(vals)
+                    } else if name == "append" {
+                        let arg = argv.drain(..).next().unwrap();
+                        let mut val_cpy = Cell::new(Value::None);
+
+                        val_cpy.swap(&*val);
+                        val_cpy.get_mut().list_append(arg).unwrap();
+
+                        val_cpy.swap(&*val);
+
+                        Handle::wrap_value(Value::None)
                     } else {
                         panic!("No such builtin: {}", name);
                     }
@@ -332,7 +381,13 @@ impl Interpreter {
                 let res = self.step(scopes, callee).1.unwrap_value();
                 let key = self.step(scopes, k).1.unwrap_value();
 
-                Handle::Value(res.get_child(key).unwrap().clone())
+                match res.get_child(key) {
+                    Some(c) => Handle::wrap_value(c.clone()),
+                    None => {
+                        let key = self.step(scopes, k).1.unwrap_value();
+                        panic!("No such child '{:?}' in '{:?}'", key, res);
+                    }
+                }
             }
             Expr::Dictionary(kvs) => {
                 let mut res = Value::make_map();
@@ -342,10 +397,10 @@ impl Interpreter {
                     res.map_insert(k.clone(), elem).unwrap();
                 }
 
-                Handle::Value(res)
+                Handle::wrap_value(res)
             }
             Expr::String(s) => {
-                Handle::Value( s.clone().into() )
+                Handle::wrap_value( s.clone().into() )
             }
             Expr::Range{start, end, step} => {
                 let start = self.step(scopes, start).1.unwrap_value();
@@ -378,7 +433,7 @@ impl Interpreter {
                     Err(_) => { panic!("Failed to convert to string"); }
                 };
 
-                Handle::Value( s.into() )
+                Handle::wrap_value( s.into() )
             }
             Expr::Cast{value, typename} => {
                 match typename {
@@ -386,13 +441,19 @@ impl Interpreter {
                         let inner = self.step(scopes, value).1.unwrap_value();
 
                         let val: u8 = inner.try_into().unwrap();
-                        Handle::Value( val.into() )
+                        Handle::wrap_value( val.into() )
                     }
                     ValueType::I64 => {
                         let inner = self.step(scopes, value).1.unwrap_value();
 
                         let val: i64 = inner.try_into().unwrap();
-                        Handle::Value( val.into() )
+                        Handle::wrap_value( val.into() )
+                    }
+                    ValueType::U64 => {
+                        let inner = self.step(scopes, value).1.unwrap_value();
+
+                        let val: u64 = inner.try_into().unwrap();
+                        Handle::wrap_value( val.into() )
                     }
                     _ => {
                         todo!();
@@ -408,19 +469,19 @@ impl Interpreter {
                     result.list_append(elem).unwrap();
                 }
 
-                Handle::Value(result)
+                Handle::wrap_value(result)
             }
             Expr::Bool(b) => {
-                Handle::Value( b.into())
+                Handle::wrap_value( b.into())
             }
             Expr::I64(i) => {
-                Handle::Value( i.into())
+                Handle::wrap_value( i.into())
             }
             Expr::U64(i) => {
-                Handle::Value( i.into() )
+                Handle::wrap_value( i.into() )
             }
             Expr::U8(i) => {
-                Handle::Value( (*i).into() )
+                Handle::wrap_value((*i).into())
             }
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;

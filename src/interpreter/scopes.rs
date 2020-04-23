@@ -1,5 +1,8 @@
 use crate::Value;
 
+use std::rc::Rc;
+use std::cell::Cell;
+
 use std::collections::HashMap;
 
 use super::*;
@@ -7,7 +10,7 @@ use super::*;
 #[ derive(Default) ]
 struct Scope {
     modules: HashMap<String, Rc<dyn Module>>,
-    variables: HashMap<String, Value>
+    variables: HashMap<String, Rc<Cell<Value>>>
 }
 
 pub struct Scopes {
@@ -15,7 +18,7 @@ pub struct Scopes {
 }
 
 impl Scopes {
-    pub fn new(modules: HashMap<String, Rc<dyn Module>>, variables: HashMap<String, Value>) -> Self {
+    pub fn new(modules: HashMap<String, Rc<dyn Module>>, variables: HashMap<String, Rc<Cell<Value>>>) -> Self {
         let scope = Scope{ modules, variables };
 
         Self{ scopes: vec![scope] }
@@ -50,7 +53,7 @@ impl Scopes {
 
         match scope.variables.entry(name) {
             hash_map::Entry::Vacant(o) => {
-                o.insert(val);
+                o.insert(Rc::new(Cell::new(val)));
             }
             hash_map::Entry::Occupied(o) => {
                 panic!("Variable {} already existed!", o.key());
@@ -62,7 +65,7 @@ impl Scopes {
 
         for scope in self.scopes.iter_mut().rev() {
             if let Some(var) = scope.variables.get_mut(name) {
-                *var = val;
+                *var = Rc::new( Cell::new(val) );
                 return;
             }
         }

@@ -23,7 +23,7 @@ impl Module for TestModule {
         } else if name == "add_two" {
             Handle::Callable( Box::new(AddTwo{}) )
         } else if name == "MY_CONSTANT" {
-            Handle::Value( "this is a test".to_string().into() )
+            Handle::wrap_value( "this is a test".to_string().into() )
         } else {
             panic!("Unexpected function call: {}", name);
         }

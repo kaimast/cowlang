@@ -505,6 +505,11 @@ impl From<u64> for Value {
     fn from(i: u64) -> Self { Self::U64(i) }
 }
 
+impl From<usize> for Value {
+    fn from(i: usize) -> Self { Self::U64(i as u64) }
+}
+
+
 impl From<&bool> for Value {
     fn from(b: &bool) -> Self { Self::Bool(*b) }
 }

@@ -189,6 +189,7 @@ lexer! {
     },
     "u8" => Token::TypeName(ValueType::U8),
     "i64" => Token::TypeName(ValueType::I64),
+    "u64" => Token::TypeName(ValueType::U64),
     r#""[^"]*""# => Token::StringLiteral(tok[1..tok.len()-1].into()),
     // Allow string literal with delimited by ' as well
     r#"'[^']*'"# => Token::StringLiteral(tok[1..tok.len()-1].into()),
