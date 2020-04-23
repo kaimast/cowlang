@@ -392,7 +392,14 @@ impl TryInto<u8> for Value {
     fn try_into(self) -> Result<u8, ()> {
         match self {
             Value::U8(content) => { Ok(content) }
-            Value::U64(content) => { 
+            Value::I64(content) => {
+                if content < 256 && content > 0 {
+                    Ok(content as u8)
+                } else {
+                    panic!("integer overflow!");
+                }
+            }
+            Value::U64(content) => {
                 if content < 256 {
                     Ok(content as u8)
                 } else {
