@@ -393,7 +393,7 @@ impl TryInto<u8> for Value {
         match self {
             Value::U8(content) => { Ok(content) }
             Value::I64(content) => {
-                if content < 256 && content > 0 {
+                if content < 256 && content >= 0 {
                     Ok(content as u8)
                 } else {
                     panic!("integer overflow!");
