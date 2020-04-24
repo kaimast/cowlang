@@ -104,6 +104,12 @@ parser! {
         ToStr OpenBracket op[inner] CloseBracket => {
             (span!(), Expr::ToStr(Box::new(inner)))
         }
+        Max OpenBracket op[lhs] Comma op[rhs] CloseBracket => {
+            (span!(), Expr::Max{lhs: Box::new(lhs), rhs: Box::new(rhs)})
+        }
+        Min OpenBracket op[lhs] Comma op[rhs] CloseBracket => {
+            (span!(), Expr::Min{lhs: Box::new(lhs), rhs: Box::new(rhs)})
+        }
         Range OpenBracket op[start] Comma op[end] CloseBracket => {
             (span!(), Expr::Range{start: Box::new(start), end: Box::new(end), step: None})
         }

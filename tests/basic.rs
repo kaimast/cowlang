@@ -27,6 +27,31 @@ fn cast_integer() {
 }
 
 #[test]
+fn max() {
+    let program = compile_string("\
+        return max(5, 101)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, (101 as i64).into());
+}
+
+#[test]
+fn min() {
+    let program = compile_string("\
+        return min(5, 101)\n\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    assert_eq!(result, (5 as i64).into());
+}
+
+
+#[test]
 fn cast_integer_str() {
     let program = compile_string("\
         let val = 15u\n\

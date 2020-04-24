@@ -35,6 +35,8 @@ pub enum Expr {
     List(Vec<ParseNode>),
     Range{start: Box<ParseNode>, end: Box<ParseNode>, step: Option<Box<ParseNode>>},
     ToStr(Box<ParseNode>),
+    Max{lhs: Box<ParseNode>, rhs: Box<ParseNode>},
+    Min{lhs: Box<ParseNode>, rhs: Box<ParseNode>},
     Dictionary(HashMap<String, ParseNode>),
     Not(Box<ParseNode>),
     Cast{value: Box<ParseNode>, typename: ValueType},

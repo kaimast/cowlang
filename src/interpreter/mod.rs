@@ -424,6 +424,26 @@ impl Interpreter {
 
                 Handle::Iter( Box::new( RangeIterable{ end, step, pos: start } ))
             }
+            Expr::Max{lhs, rhs} => {
+                let lhs = self.step(scopes, lhs).1.unwrap_value();
+                let rhs = self.step(scopes, rhs).1.unwrap_value();
+
+                let lhs: i64 = lhs.try_into().expect("Not an integer");
+                let rhs: i64 = rhs.try_into().expect("Not an integer");
+
+                let result = std::cmp::max(lhs, rhs);
+                Handle::wrap_value(result.into())
+            }
+            Expr::Min{lhs, rhs} => {
+                let lhs = self.step(scopes, lhs).1.unwrap_value();
+                let rhs = self.step(scopes, rhs).1.unwrap_value();
+
+                let lhs: i64 = lhs.try_into().expect("Not an integer");
+                let rhs: i64 = rhs.try_into().expect("Not an integer");
+
+                let result = std::cmp::min(lhs, rhs);
+                Handle::wrap_value(result.into())
+            }
             Expr::ToStr(inner) => {
                 let val = self.step(scopes, inner).1.unwrap_value();
 
