@@ -431,8 +431,19 @@ impl Interpreter {
                 let lhs = self.step(scopes, lhs).1.unwrap_value();
                 let rhs = self.step(scopes, rhs).1.unwrap_value();
 
-                let lhs: i64 = lhs.try_into().expect("Not an integer");
-                let rhs: i64 = rhs.try_into().expect("Not an integer");
+                let lhs: i64 = match lhs.try_into() {
+                    Ok(i) => i,
+                    Err(val) => {
+                        panic!("max() failed. '{:?}' is not an integer!", val);
+                    }
+                };
+
+                let rhs: i64 = match rhs.try_into() {
+                    Ok(i) => i,
+                    Err(val) => {
+                        panic!("max() failed. '{:?}' is not an integer!", val);
+                    }
+                };
 
                 let result = std::cmp::max(lhs, rhs);
                 Handle::wrap_value(result.into())
@@ -441,8 +452,20 @@ impl Interpreter {
                 let lhs = self.step(scopes, lhs).1.unwrap_value();
                 let rhs = self.step(scopes, rhs).1.unwrap_value();
 
-                let lhs: i64 = lhs.try_into().expect("Not an integer");
-                let rhs: i64 = rhs.try_into().expect("Not an integer");
+                let lhs: i64 = match lhs.try_into() {
+                    Ok(i) => i,
+                    Err(val) => {
+                        panic!("min() failed. '{:?}' is not an integer!", val);
+                    }
+                };
+
+                let rhs: i64 = match rhs.try_into() {
+                    Ok(i) => i,
+                    Err(val) => {
+                        panic!("min() failed. '{:?}' is not an integer!", val);
+                    }
+                };
+
 
                 let result = std::cmp::min(lhs, rhs);
                 Handle::wrap_value(result.into())

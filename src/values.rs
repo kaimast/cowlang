@@ -265,22 +265,22 @@ impl Value {
         } 
     }
 
-    pub fn into_map(self) -> Option<HashMap<String, Value>> {
+    pub fn into_map(self) -> Result<HashMap<String, Value>, Value> {
         match self {
             Value::Map(mut content) => {
                 let mut res = HashMap::new();
                 std::mem::swap(&mut res, content.as_mut());
 
-                Some(res)
+                Ok(res)
             }
-            _ => { None }
+            _ => Err(self)
         }
     }
 
-    pub fn into_vec(self) -> Result<Vec<Value>, ()> {
+    pub fn into_vec(self) -> Result<Vec<Value>, Value> {
         match self {
             Value::List(content) => { Ok(content) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 
@@ -357,17 +357,24 @@ impl TryInto<Bytes> for Value {
 }
 
 impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<Vec<T>, ()> {
+    fn try_into(self) -> Result<Vec<T>, Self> {
         let mut res = Vec::new();
 
-        for val in self.into_vec()?.drain(..) {
+        let mut vec = match self.into_vec() {
+            Ok(v) => v,
+            Err(val) => {
+                return Err(val);
+            }
+        };
+
+        for val in vec.drain(..) {
 
             #[allow(clippy::match_wild_err_arm)]
             match val.try_into() {
                 Ok(v) => { res.push(v) }
-                Err(_) => { panic!("Type error!");  }
+                _ => { panic!("Type error!");  }
             }
         }
 
@@ -376,20 +383,20 @@ impl<T> TryInto<Vec<T>> for Value where T: TryFrom<Value> {
 }
 
 impl TryInto<bool> for Value {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<bool, ()> {
+    fn try_into(self) -> Result<bool, Self> {
         match self {
             Value::Bool(content) => { Ok(content) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
 
 impl TryInto<u8> for Value {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<u8, ()> {
+    fn try_into(self) -> Result<u8, Self> {
         match self {
             Value::U8(content) => { Ok(content) }
             Value::I64(content) => {
@@ -406,60 +413,60 @@ impl TryInto<u8> for Value {
                     panic!("integer overflow!");
                 }
             }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
 
 impl TryInto<i64> for Value {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<i64, ()> {
+    fn try_into(self) -> Result<i64, Self> {
         match self {
             Value::I64(content) => { Ok(content) }
             Value::U64(content) => { Ok(content as i64) }
             Value::F64(content) => { Ok(content as i64) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
 
 impl TryInto<f64> for Value {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<f64, ()> {
+    fn try_into(self) -> Result<f64, Self> {
         match self {
             Value::I64(content) => { Ok(content as f64) }
             Value::U64(content) => { Ok(content as f64) }
             Value::F64(content) => { Ok(content) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
 
 impl TryInto<u64> for Value {
-    type Error = ();
+    type Error = Self;
         
-    fn try_into(self) -> Result<u64, ()> {
+    fn try_into(self) -> Result<u64, Self> {
         match self {
             Value::I64(content) => { Ok(content as u64) }
             Value::U64(content) => { Ok(content) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
 
 impl TryInto<String> for Value {
-    type Error = ();
+    type Error = Self;
 
-    fn try_into(self) -> Result<String, ()> {
+    fn try_into(self) -> Result<String, Self> {
         match self {
             Value::Str(content) => { Ok(content) }
             Value::I64(i) => { Ok(format!("{}", i)) }
             Value::F64(f) => { Ok(format!("{}", f)) }
             Value::U64(u) => { Ok(format!("{}", u)) }
             Value::Bytes(b) => { Ok(format!("{:#x}", &*b)) }
-            _ => { Err(()) }
+            _ => { Err(self) }
         }
     }
 }
