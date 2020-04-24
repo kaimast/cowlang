@@ -33,6 +33,7 @@ pub enum Expr {
     Bool(bool),
     String(String),
     List(Vec<ParseNode>),
+    Brackets(Box<ParseNode>),
     Range{start: Box<ParseNode>, end: Box<ParseNode>, step: Option<Box<ParseNode>>},
     ToStr(Box<ParseNode>),
     Max{lhs: Box<ParseNode>, rhs: Box<ParseNode>},

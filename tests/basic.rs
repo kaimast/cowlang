@@ -101,9 +101,6 @@ fn double_indent() {
     assert_eq!(result, expected.into());
 }
 
-
-
-
 #[test]
 fn scoped_variables() {
     let program = compile_string("\
@@ -157,6 +154,20 @@ fn to_string() {
     let result = interpreter.run(&program);
 
     let expected = String::from("51431");
+    assert_eq!(result, expected.into());
+}
+
+#[test]
+fn braces(){
+    let program = compile_string("\
+        let res = 5*(1+4)\n\
+        return res\
+    ");
+
+    let mut interpreter = Interpreter::default();
+    let result = interpreter.run(&program);
+
+    let expected: i64 = 25;
     assert_eq!(result, expected.into());
 }
 

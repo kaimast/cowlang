@@ -120,6 +120,9 @@ parser! {
     }
 
     term: ParseNode {
+        OpenBracket op[inner] CloseBracket => {
+            (span!(), Expr::Brackets( Box::new(inner) ))
+        }
         Not atom[rhs] => {
             (span!(), Expr::Not(Box::new(rhs)))
         }

@@ -263,6 +263,9 @@ impl Interpreter {
             Expr::Var(var) => {
                 scopes.get(var)
             }
+            Expr::Brackets(inner) => {
+                self.step(scopes, &*inner).1
+            }
             Expr::Add{lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
