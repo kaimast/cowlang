@@ -559,8 +559,8 @@ impl FromPyObject<'_> for Value {
             return Ok( i.into() );
         }
 
-        if let Ok(pybytes) = PyAny::downcast::<PyByteArray>(obj) {
-            let bytes: Bytes = pybytes.to_vec().into();
+        if let Ok(pybytes) = PyAny::downcast::<PyBytes>(obj) {
+            let bytes = Bytes::copy_from_slice(pybytes.as_bytes());
             return Ok(bytes.into());
         }
 
@@ -606,7 +606,7 @@ impl IntoPy<PyObject> for Value {
             }
             Value::Bytes(bytes) => {
                 let bytes = bytes.as_ref();
-                PyByteArray::new(py, bytes).into()
+                PyBytes::new(py, bytes).into()
             }
         }
     }
