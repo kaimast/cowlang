@@ -321,7 +321,7 @@ impl Value {
     }
 
     pub fn type_check(name: String, val: &Value) -> bool{
-        info!("name {}val {}", name, val);
+        info!("name {}val {:#?}", name, val);
         true
     }
 
