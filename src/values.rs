@@ -18,6 +18,7 @@ use pyo3::types::*;
 use crate::error::Error;
 
 use bytes::Bytes;
+use log::*;
 
 #[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
 pub enum ValueType {
@@ -317,6 +318,11 @@ impl Value {
             _ => { return None; }
 
         }
+    }
+
+    pub fn type_check(name: String, val: &Value) -> bool{
+        info!("name {}val {}", name, val);
+        true
     }
 
 }
