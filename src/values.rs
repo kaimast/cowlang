@@ -334,10 +334,14 @@ impl Value {
             Value::None => { ValueType::None }
         }
     }
-    pub fn type_check(name: String, val: &Value) -> bool{
-        let x = Value::get_type(val);
-        println!("name {} val {:#?}", name, x);
-        true
+    pub fn type_check(meta_val: &Value, val: &Value) -> bool{
+        let meta_v = Value::get_type(meta_val);
+        let v = Value::get_type(val);
+        println!("Is {:#?} == {:#?}?", meta_v, v);
+        if(meta_v != v) {
+            return false;
+        }
+        return true;
     }
 
 }
