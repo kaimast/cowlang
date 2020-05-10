@@ -20,6 +20,33 @@ use crate::error::Error;
 use bytes::Bytes;
 use log::*;
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq) ]
+pub enum PrimitiveType {
+    None,
+    Bool,
+    String,
+    I64,
+    U64,
+    U8,
+    F64,
+}
+
+#[ derive(Serialize, Deserialize, PartialEq, Clone, Debug) ]
+pub enum TypeDefinition {
+    Primitive(PrimitiveType),
+    Array(Box<TypeDefinition>, usize),
+    Map(Box<TypeDefinition>, Box<TypeDefinition>),
+    List(Box<TypeDefinition>),
+    Bytes(Box<Bytes>)
+}
+
+impl TypeDefinition {
+    pub fn make_map(first: TypeDefinition, second: TypeDefinition) -> Self {
+        Self::Map(Box::new(first), Box::new(second))
+    }
+}
+
+
 #[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
 pub enum ValueType {
     None,
@@ -320,25 +347,28 @@ impl Value {
         }
     }
 
-    pub fn get_type(&self) -> ValueType {
+    pub fn get_type(&self) -> TypeDefinition {
         match &self{
-            Value::Bool(_content) => { ValueType::Bool }
-            Value::Str(_content) => { ValueType::String }
-            Value::I64(_content) => { ValueType::I64 }
-            Value::U64(_content) => { ValueType::U64 }
-            Value::U8(_content) => { ValueType::U8 }
-            Value::F64(_content) => { ValueType::F64 }
-            Value::Map(_content) => { ValueType::Map }
-            Value::List(_content) => { ValueType::List }
-            Value::Bytes(_content) => { ValueType::Bytes }
-            Value::None => { ValueType::None }
+            Value::Bool(_content) => { TypeDefinition::Primitive(PrimitiveType::Bool)}
+            Value::Str(_content) => { TypeDefinition::Primitive(PrimitiveType::String) }
+            Value::I64(_content) => { TypeDefinition::Primitive(PrimitiveType::I64) }
+            Value::U64(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
+            Value::U8(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
+            Value::F64(_content) => { TypeDefinition::Primitive(PrimitiveType::F64) }
+            Value::Map(hashmap) => { TypeDefinition::Map(Box::new(PrimitiveType::String), Box::new(Value::get_type(hashmap.values().next()))) } 
+            Value::List(type_1) => { TypeDefinition::List(Box::new(Value::get_type(type_1))) } 
+            Value::Bytes(_content) => { TypeDefinition::Bytes(Box::new(Bytes::new())) } 
+            Value::None => { TypeDefinition::Primitive(PrimitiveType::None) }
         }
     }
-    pub fn type_check(meta_val: &Value, val: &Value) -> bool{
-        let meta_v = Value::get_type(meta_val);
+    pub fn get_type_from_complex(&self) -> Value {
+        match &self{
+    }
+
+    pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
-        println!("Is {:#?} == {:#?}?", meta_v, v);
-        if(meta_v != v) {
+        println!("Is {:#?} == {:#?}?", meta_val, v);
+        if(meta_val != v) {
             return false;
         }
         return true;
