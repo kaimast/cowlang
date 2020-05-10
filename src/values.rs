@@ -320,8 +320,23 @@ impl Value {
         }
     }
 
+    pub fn get_type(&self) -> ValueType {
+        match &self{
+            Value::Bool(_content) => { ValueType::Bool }
+            Value::Str(_content) => { ValueType::String }
+            Value::I64(_content) => { ValueType::I64 }
+            Value::U64(_content) => { ValueType::U64 }
+            Value::U8(_content) => { ValueType::U8 }
+            Value::F64(_content) => { ValueType::F64 }
+            Value::Map(_content) => { ValueType::Map }
+            Value::List(_content) => { ValueType::List }
+            Value::Bytes(_content) => { ValueType::Bytes }
+            Value::None => { ValueType::None }
+        }
+    }
     pub fn type_check(name: String, val: &Value) -> bool{
-        info!("name {}val {:#?}", name, val);
+        let x = Value::get_type(val);
+        println!("name {} val {:#?}", name, x);
         true
     }
 
