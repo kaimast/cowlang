@@ -364,12 +364,11 @@ impl Value {
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
                     if (type_1 != type_2){
-                        type_2 = TypeDefinition::Primitive(PrimitiveType::Any);
-                        break;
+                        return TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(TypeDefinition::Primitive(PrimitiveType::Any))) ;
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 }
-                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_2)) 
+                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_1)) 
             } 
             Value::List(vec) => 
             { 
