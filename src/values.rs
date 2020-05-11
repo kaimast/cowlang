@@ -18,7 +18,6 @@ use pyo3::types::*;
 use crate::error::Error;
 
 use bytes::Bytes;
-use log::*;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq) ]
 pub enum PrimitiveType {
@@ -362,8 +361,8 @@ impl Value {
                 let val = Value::get_value_from_option(iterator.next());
                 let type_1 = Value::get_type(val);
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
-                while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
-                    if (type_1 != type_2){
+                while type_2 != TypeDefinition::Primitive(PrimitiveType::None){
+                    if type_1 != type_2{
                         return TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(TypeDefinition::Primitive(PrimitiveType::Any))) ;
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
@@ -376,8 +375,8 @@ impl Value {
                 let val = Value::get_value_from_option(iterator.next());
                 let type_1 = Value::get_type(val);
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
-                while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
-                    if (type_1 != type_2){
+                while type_2 != TypeDefinition::Primitive(PrimitiveType::None){
+                    if type_1 != type_2{
                         return TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::Any)));
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
@@ -398,7 +397,7 @@ impl Value {
 
     pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
-        if(*meta_val != v) {
+        if *meta_val != v {
             return false;
         }
         return true;

@@ -5,7 +5,6 @@ authors = ["Kai Mast <kaimast@cs.cornell.edu>"]
 edition = "2018"
 
 [dependencies]
-log = { version="0.4" }
 pyo3 = { version="0.9", optional=true }
 bincode = { version="1.2" }
 serde = { version="1.0", features=["derive"] }
