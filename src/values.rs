@@ -355,20 +355,50 @@ impl Value {
             Value::U64(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
             Value::U8(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
             Value::F64(_content) => { TypeDefinition::Primitive(PrimitiveType::F64) }
-            Value::Map(hashmap) => { TypeDefinition::Map(Box::new(PrimitiveType::String), Box::new(Value::get_type(hashmap.values().next()))) } 
-            Value::List(type_1) => { TypeDefinition::List(Box::new(Value::get_type(type_1))) } 
+            Value::Map(hashmap) => 
+            { 
+                let mut iterator = hashmap.values();
+                let val = Value::get_value_from_option(iterator.next());
+                let type_1 = Value::get_type(val);
+                let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
+                while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
+                    if (type_1 != type_2){
+                        panic!("Type mismatch in hashmap!");
+                    }
+                    type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
+                }
+                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_1)) 
+            } 
+            Value::List(vec) => 
+            { 
+                let mut iterator = vec.iter();
+                let val = Value::get_value_from_option(iterator.next());
+                let type_1 = Value::get_type(val);
+                let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
+                while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
+                    if (type_1 != type_2){
+                        panic!("Type mismatch in list!");
+                    }
+                    type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
+                }
+                TypeDefinition::List(Box::new(type_1))
+            } 
             Value::Bytes(_content) => { TypeDefinition::Bytes(Box::new(Bytes::new())) } 
             Value::None => { TypeDefinition::Primitive(PrimitiveType::None) }
         }
     }
-    pub fn get_type_from_complex(&self) -> Value {
-        match &self{
+
+    pub fn get_value_from_option(it: std::option::Option<&Value>) -> &Value{
+        match it{
+            Some(x) => {x}
+            None => {&Value::None}
+        }
     }
 
     pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
         println!("Is {:#?} == {:#?}?", meta_val, v);
-        if(meta_val != v) {
+        if(*meta_val != v) {
             return false;
         }
         return true;
