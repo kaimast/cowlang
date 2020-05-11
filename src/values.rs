@@ -23,6 +23,7 @@ use log::*;
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq) ]
 pub enum PrimitiveType {
     None,
+    Any,
     Bool,
     String,
     I64,
@@ -363,11 +364,12 @@ impl Value {
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
                     if (type_1 != type_2){
-                        panic!("Type mismatch in hashmap!");
+                        type_2 = TypeDefinition::Primitive(PrimitiveType::Any);
+                        break;
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 }
-                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_1)) 
+                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_2)) 
             } 
             Value::List(vec) => 
             { 
@@ -377,7 +379,7 @@ impl Value {
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 while (type_2 != TypeDefinition::Primitive(PrimitiveType::None)){
                     if (type_1 != type_2){
-                        panic!("Type mismatch in list!");
+                        return TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::Any)));
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 }
@@ -397,7 +399,6 @@ impl Value {
 
     pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
-        println!("Is {:#?} == {:#?} ? original was {:#?}", meta_val, v, val);
         if(*meta_val != v) {
             return false;
         }
