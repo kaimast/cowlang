@@ -1,4 +1,4 @@
-use cowlang::{Interpreter, compile_string};
+use cowlang::{Interpreter, compile_string, Value, TypeDefinition, PrimitiveType};
 
 #[test]
 fn return_list() {
@@ -106,3 +106,34 @@ fn list_append() {
 }
 
 
+#[test]
+fn type_check_str_list(){
+    let meta_list = TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::String)));
+
+    let list = Value::List(vec!["foo".into()]);
+
+    let result = Value::type_check(&meta_list, &list);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn type_check_u64_list(){
+    let meta_list = TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::U64)));
+
+    let num: u64 = 2;
+    let list = Value::List(vec![num.into()]);
+
+    let result = Value::type_check(&meta_list, &list);
+    assert_eq!(result, true);
+}
+
+#[test]
+fn type_check_any_list(){
+    let meta_list = TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::Any)));
+
+    let num: u64 = 2;
+    let list = Value::List(vec![num.into(), "foo".into()]);
+
+    let result = Value::type_check(&meta_list, &list);
+    assert_eq!(result, true);
+}
