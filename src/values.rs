@@ -397,7 +397,7 @@ impl Value {
 
     pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
-        println!("Is {:#?} == {:#?}?", meta_val, v);
+        println!("Is {:#?} == {:#?} ? original was {:#?}", meta_val, v, val);
         if(*meta_val != v) {
             return false;
         }
