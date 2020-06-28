@@ -1,9 +1,8 @@
 use plex::lexer;
-use super::ast::Span;
 use std::collections::BTreeMap;
 use std::cmp::Ordering;
 
-use crate::values::ValueType;
+use crate::ast::{Span, ValueType};
 
 #[ derive(Debug, Clone) ]
 pub enum Token {

@@ -1,10 +1,9 @@
 #![feature(map_first_last)]
 
+pub mod ast;
+
 mod values;
 pub use values::*;
-
-mod error;
-pub use error::Error;
 
 #[ cfg(feature="compiler") ]
 mod compiler;

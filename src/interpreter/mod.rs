@@ -1,5 +1,5 @@
-use crate::compiler::*;
-use crate::values::{Value, ValueType};
+use crate::ast::{Expr, CompareType, Program, ParseNode, ValueType};
+use crate::values::{Value, ValueError};
 
 use std::convert::TryInto;
 use std::rc::Rc;
@@ -216,7 +216,7 @@ impl Interpreter {
             Expr::AddEquals{lhs, rhs} => {
                 let var = scopes.get(lhs).unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
-                let result = var.add(&right);
+                let result = var.add(&right).unwrap();
 
                 scopes.update_variable(lhs, Handle::wrap_value(result));
 
@@ -284,13 +284,13 @@ impl Interpreter {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
 
-                Handle::wrap_value( left.add(&right) )
+                Handle::wrap_value( left.add(&right).unwrap() )
             }
             Expr::Multiply{lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
                 let right = self.step(scopes, &rhs).1.unwrap_value();
 
-                Handle::wrap_value( left.multiply(&right) )
+                Handle::wrap_value( left.multiply(&right).unwrap() )
             }
             Expr::Compare{ctype, lhs, rhs} => {
                 let left = self.step(scopes, &lhs).1.unwrap_value();
@@ -298,13 +298,13 @@ impl Interpreter {
 
                 let result = match ctype {
                     CompareType::Greater => {
-                        left.is_greater_than(&right)
+                        left.is_greater_than(&right).unwrap()
                     }
                     CompareType::Smaller => {
-                        left.is_smaller_than(&right)
+                        left.is_smaller_than(&right).unwrap()
                     }
                     CompareType::Equals => {
-                        left.equals(&right)
+                        left.equals(&right).unwrap()
                     }
                 };
 
@@ -312,7 +312,7 @@ impl Interpreter {
             }
             Expr::Not(rhs) => {
                 let right = self.step(scopes, &rhs).1.unwrap_value();
-                Handle::wrap_value( right.negate() )
+                Handle::wrap_value( right.negate().unwrap() )
             }
             Expr::Assign(var, rhs) => {
                 let val = self.step(scopes, rhs).1;
@@ -399,10 +399,13 @@ impl Interpreter {
                 let key = self.step(scopes, k).1.unwrap_value();
 
                 match res.get_child(key) {
-                    Some(c) => Handle::wrap_value(c.clone()),
-                    None => {
+                    Ok(c) => Handle::wrap_value(c.clone()),
+                    Err(ValueError::NoSuchChild) => {
                         let key = self.step(scopes, k).1.unwrap_value();
                         panic!("No such child '{:?}' in '{:?}'", key, res);
+                    }
+                    Err(e) => {
+                        panic!("Got unexpected error: {:?}", e);
                     }
                 }
             }
