@@ -42,11 +42,10 @@ pub enum TypeDefinition {
 }
 
 impl TypeDefinition {
-    pub fn make_map(first: TypeDefinition, second: TypeDefinition) -> Self {
-        Self::Map(Box::new(first), Box::new(second))
+    pub fn make_map(key_type: TypeDefinition, value_type: TypeDefinition) -> Self {
+        Self::Map(Box::new(key_type), Box::new(value_type))
     }
 }
-
 
 #[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
 pub enum ValueType {
@@ -633,9 +632,10 @@ impl From<bool> for Value {
 impl FromPyObject<'_> for Value {
     fn extract(obj: &PyAny) -> PyResult<Self> {
         if let Ok(string) = PyAny::downcast::<PyString>(obj) {
-            return Ok( Value::Str( PyString::extract(string).unwrap() ));
+            let rs_str: String = string.extract()?;
+            return Ok( rs_str.into() );
         }
-        
+
         if let Ok(list) = PyAny::downcast::<PyList>(obj) {
             let mut result = Value::make_list();
 
