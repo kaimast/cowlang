@@ -1,8 +1,7 @@
 mod lexer;
-mod ast;
 mod parser;
 
-pub use ast::*;
+use crate::ast::{Program, Span};
 
 use std::fmt::Debug;
 

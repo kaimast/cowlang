@@ -1,13 +1,30 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
-use crate::values::ValueType;
-
 #[ derive(Debug, Clone, Copy, Serialize, Deserialize) ]
 pub struct Span {
     pub hi: usize,
     pub lo: usize
 }
+
+/// Potential top-level type a Value can have.
+///
+/// *Note:* In most cases you want to use TypeDefinition instead. This is only used by the interpreter and compiler.
+#[ derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq) ]
+pub enum ValueType {
+    None,
+    Bool,
+    String,
+    I64,
+    U64,
+    U8,
+    F32,
+    F64,
+    Map,
+    List,
+    Bytes,
+}
+
 
 pub type ParseNode = (Span, Expr);
 pub type Statements = Vec<ParseNode>;

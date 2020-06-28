@@ -1,6 +1,7 @@
 use super::lexer::Token::*;
 use super::lexer::Token;
-use super::ast::*;
+
+use crate::ast::*;
 
 use std::collections::HashMap;
 use plex::parser;
@@ -159,7 +160,7 @@ parser! {
             m.insert(id, a);
             m
         }
-        => { HashMap::new() }
+        => HashMap::new()
     }
 
     atom: ParseNode {
