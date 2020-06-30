@@ -15,6 +15,12 @@ use pyo3::{PyResult, FromPyObject, PyErr, IntoPy};
 #[ cfg(feature="python-bindings") ]
 use pyo3::types::*;
 
+#[ cfg(feature="hash") ]
+use digest::{Digest};
+
+#[ cfg(feature="hash") ]
+use byte_slice_cast::AsByteSlice;
+
 use bytes::Bytes;
 
 mod error;
@@ -79,6 +85,58 @@ impl Value {
     /// Create an empty list
     pub fn make_list() -> Value {
         return Value::List(Vec::new());
+    }
+
+    #[ cfg(feature="hash") ]
+    pub fn hash<Hasher: Digest>(&self, hasher: &mut Hasher) {
+        match &self {
+            Value::Map(hashmap) =>
+            {
+                for val in hashmap.values() {
+                    val.hash(hasher);
+                }
+            }
+            Value::List(vec) =>
+            {
+                for val in vec.iter() {
+                    val.hash(hasher);
+                }
+            }
+            Value::Str(content) => {
+                hasher.update(content);
+            }
+            Value::None => {}
+            Value::Bool(content) => {
+                if *content {
+                    hasher.update(&[1]);
+                } else {
+                    hasher.update(&[0]);
+                }
+            }
+            Value::I64(content) => {
+                let slice = [*content];
+                hasher.update(slice.as_byte_slice());
+            }
+            Value::U64(content) => {
+                let slice = [*content];
+                hasher.update(slice.as_byte_slice());
+            }
+            Value::U8(content) => {
+                let slice = [*content];
+                hasher.update(slice.as_byte_slice());
+            }
+            Value::F64(content) => {
+                let slice = [*content];
+                hasher.update(slice.as_byte_slice());
+            }
+            Value::F32(content) => {
+                let slice = [*content];
+                hasher.update(slice.as_byte_slice());
+            }
+            Value::Bytes(content) => {
+                hasher.update(&content[..]);
+            }
+        }
     }
 
     /// Get the subfield of this value

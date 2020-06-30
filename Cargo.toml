@@ -5,11 +5,13 @@ authors = ["Kai Mast <kaimast@cs.cornell.edu>"]
 edition = "2018"
 
 [dependencies]
-pyo3 = { version="0.11", optional=true }
 bincode = { version="1.2" }
 serde = { version="1.0", features=["derive"] }
 bytes = { version="0.5", features=["serde"] }
 plex = { git="https://github.com/kaimast/plex.git", optional=true }
+digest = { version="0.9", optional=true }
+byte-slice-cast = { version="0.3", optional=true }
+pyo3 = { version="0.11", optional=true }
 
 [features]
 default = ["compiler", "interpreter"]
@@ -17,3 +19,4 @@ verbose = []
 python-bindings = ["pyo3"]
 compiler = ["plex"]
 interpreter = []
+hash = ["digest", "byte-slice-cast"]
