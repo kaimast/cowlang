@@ -11,7 +11,7 @@ bytes = { version="0.5", features=["serde"] }
 plex = { git="https://github.com/kaimast/plex.git", optional=true }
 digest = { version="0.9", optional=true }
 byte-slice-cast = { version="0.3", optional=true }
-pyo3 = { version="0.11", optional=true }
+pyo3 = { version="0.14", optional=true }
 
 [features]
 default = ["compiler", "interpreter"]
