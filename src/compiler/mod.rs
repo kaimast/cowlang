@@ -71,7 +71,7 @@ pub fn compile_string(input: &str) -> Program {
     match parse(lexer) {
         Ok(p) => { p }
         Err((info, e)) => {
-            panic!(generate_compile_error(input, info, e));
+            panic!("{}", generate_compile_error(input, info, e));
         }
     }
 }

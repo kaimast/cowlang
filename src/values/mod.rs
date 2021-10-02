@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use pyo3::prelude::*;
 
 #[ cfg(feature="python-bindings") ]
-use pyo3::exceptions as pyexceptions;
+use pyo3::exceptions::PyTypeError;
 
 #[ cfg(feature="python-bindings") ]
 use pyo3::{PyResult, FromPyObject, PyErr, IntoPy};
@@ -799,7 +799,7 @@ impl FromPyObject<'_> for Value {
             return Ok(list);
         }
 
-        let err = PyErr::new::<pyexceptions::TypeError, _>("Failed to convert PyObject to Value");
+        let err = PyErr::new::<PyTypeError, _>("Failed to convert PyObject to Value");
         return Err(err);
     }
 }
