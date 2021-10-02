@@ -21,7 +21,7 @@ use digest::{Digest};
 #[ cfg(feature="hash") ]
 use byte_slice_cast::AsByteSlice;
 
-use bytes::Bytes;
+use serde_bytes::ByteBuf;
 
 mod error;
 pub use error::ValueError;
@@ -69,7 +69,7 @@ pub enum Value {
     U8(u8),
     Map(Box<HashMap<String, Value>>),
     List(Vec<Value>),
-    Bytes(Box<Bytes>)
+    Bytes(ByteBuf)
 }
 
 impl Value {
@@ -518,8 +518,8 @@ impl From<String> for Value {
     fn from(s: String) -> Self { Self::Str(s) }
 }
 
-impl From<Bytes> for Value {
-    fn from(b: Bytes) -> Self { Self::Bytes(Box::new(b)) }
+impl From<ByteBuf> for Value {
+    fn from(b: ByteBuf) -> Self { Self::Bytes(b) }
 }
 
 impl<T> From<Vec<T>> for Value where T: Into<Value> {
@@ -534,12 +534,12 @@ impl<T> From<Vec<T>> for Value where T: Into<Value> {
     }
 }
 
-impl TryInto<Bytes> for Value {
+impl TryInto<ByteBuf> for Value {
     type Error = ValueError;
 
-    fn try_into(self) -> Result<Bytes, ValueError> {
+    fn try_into(self) -> Result<ByteBuf, ValueError> {
         match self {
-            Value::Bytes(b) => { Ok(b.as_ref().clone()) }
+            Value::Bytes(b) => { Ok(b.clone()) }
             _ => { Err(ValueError::TypeMismatch) }
         }
     }
@@ -669,7 +669,7 @@ impl TryInto<String> for Value {
             Value::F64(f) => Ok(format!("{}", f)),
             Value::F32(f) => Ok(format!("{}", f)),
             Value::U64(u) => Ok(format!("{}", u)),
-            Value::Bytes(b) => Ok(format!("{:#x}", &*b)),
+            Value::Bytes(b) => Ok(format!("{:#x?}", b)),
             _ => Err(ValueError::TypeMismatch)
         }
     }
@@ -773,7 +773,9 @@ impl FromPyObject<'_> for Value {
         }
 
         if let Ok(pybytes) = PyAny::downcast::<PyBytes>(obj) {
-            let bytes = Bytes::copy_from_slice(pybytes.as_bytes());
+            let mut vec = Vec::new();
+            vec.extend_from_slice(pybytes.as_bytes());
+            let bytes = ByteBuf::from(vec);
             return Ok(bytes.into());
         }
 
