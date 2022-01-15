@@ -17,7 +17,6 @@ fn return_list() {
 fn list_access() {
     let program = compile_string("\
         let l = [1,2,3]\n\
-
         let x = l[2]\n\
         return x+l[0]\n\
     ");

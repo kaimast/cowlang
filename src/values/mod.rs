@@ -1,5 +1,4 @@
-use std::collections::{HashMap};
-use std::convert::{TryInto};
+use std::collections::{hash_map, HashMap};
 
 use serde::{Serialize, Deserialize};
 
@@ -73,18 +72,19 @@ pub enum Value {
 }
 
 impl Value {
+    #[ must_use ]
     pub fn clone_as_value(&self) -> Value {
-        return self.clone();
+        self.clone()
     }
 
     /// Create an empty map value
     pub fn make_map() -> Value {
-        return Value::Map(Box::new( HashMap::new() ));
+        Value::Map(Box::new( HashMap::new() ))
     }
 
     /// Create an empty list
     pub fn make_list() -> Value {
-        return Value::List(Vec::new());
+        Value::List(Vec::new())
     }
 
     #[ cfg(feature="hash") ]
@@ -141,7 +141,7 @@ impl Value {
 
     /// Get the subfield of this value
     pub fn get(&self, key: &str) -> Result<&Value, ValueError> {
-        if key == "" {
+        if key.is_empty() {
             return Err(ValueError::InvalidKey);
         }
 
@@ -340,26 +340,26 @@ impl Value {
 
     pub fn num_children(&self) -> usize {
         match &*self {
-            Value::Map(content) => { return content.len(); }
-            Value::List(content) => { return content.len(); }
-            _ => { return 0; }
+            Value::Map(content) => content.len(),
+            Value::List(content) => content.len(),
+            _ => 0,
         }
     }
 
     pub fn map_insert(&mut self, key: String, value: Value) -> Result<(), ValueError> {
         match &mut *self {
             Value::Map(content) => {
-                let res = content.insert(key, value);
-                
-                if res.is_none() {
-                    return Ok(());
-                } else {
-                    return Err(ValueError::FieldAlreadyExists);
+                match content.entry(key) {
+                    hash_map::Entry::Vacant(v) => {
+                        v.insert(value);
+                        Ok(())
+                    }
+                    hash_map::Entry::Occupied(_) => {
+                        Err(ValueError::FieldAlreadyExists)
+                    }
                 }
             }
-            _ => {
-                return Err(ValueError::TypeMismatch);
-            }
+            _ => Err(ValueError::TypeMismatch),
         } 
     }
 
@@ -433,11 +433,9 @@ impl Value {
         match &mut *self {
             Value::List(content) => {
                 content.push(value);
-                return Ok(());
+                Ok(())
             }
-            _ => {
-                return Err(ValueError::TypeMismatch);
-            }
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
@@ -502,12 +500,8 @@ impl Value {
 
     pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
         let v = Value::get_type(val);
-        if *meta_val != v {
-            return false;
-        }
-        return true;
+        *meta_val == v
     }
-
 }
 
 impl From<&str> for Value {
@@ -539,8 +533,8 @@ impl TryInto<ByteBuf> for Value {
 
     fn try_into(self) -> Result<ByteBuf, ValueError> {
         match self {
-            Value::Bytes(b) => { Ok(b.clone()) }
-            _ => { Err(ValueError::TypeMismatch) }
+            Value::Bytes(b) => Ok(b),
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -588,7 +582,7 @@ impl TryInto<u8> for Value {
         match self {
             Value::U8(content) => Ok(content),
             Value::I64(content) => {
-                if content < 256 && content >= 0 {
+                if (0..=256).contains(&content) {
                     Ok(content as u8)
                 } else {
                     Err(ValueError::IntegerOverflow)
@@ -744,12 +738,10 @@ impl FromPyObject<'_> for Value {
             let mut result = Value::make_list();
 
             for elem in list {
-                let child;
-
-                match elem.extract() {
-                    Ok(c) => { child = c; }
+                let child = match elem.extract() {
+                    Ok(c) => c,
                     Err(e) => { return Err(e); }
-                }
+                };
 
                 result.list_append(child).unwrap();
             }
@@ -801,8 +793,7 @@ impl FromPyObject<'_> for Value {
             return Ok(list);
         }
 
-        let err = PyErr::new::<PyTypeError, _>("Failed to convert PyObject to Value");
-        return Err(err);
+        Err( PyErr::new::<PyTypeError, _>("Failed to convert PyObject to Value") )
     }
 }
 
@@ -853,13 +844,12 @@ impl IntoPy<PyObject> for Value {
 }
 
 #[ cfg(test) ]
-mod tests
-{
+mod tests {
     use crate::values::{Value, ValueError};
 
     use std::convert::TryInto;
 
-    use bytes::Bytes;
+    use serde_bytes::ByteBuf;
 
     #[test]
     fn list_append() {
@@ -886,13 +876,16 @@ mod tests
 
     #[test]
     fn bytes_to_str() {
-        let bytes1 = Bytes::copy_from_slice(&[1,0,1]);
-        let bytes2 = Bytes::copy_from_slice(&[0,1,1]);
+        let mut bytes1 = ByteBuf::new();
+        bytes1.extend_from_slice(&[1,0,1]);
 
-        let str1:String = Value::Bytes(Box::new(bytes1.clone())).try_into().unwrap();
-        let str1_2:String = Value::Bytes(Box::new(bytes1)).try_into().unwrap();
+        let mut bytes2 = ByteBuf::new();
+        bytes2.extend_from_slice(&[0,1,1]);
 
-        let str2:String = Value::Bytes(Box::new(bytes2)).try_into().unwrap();
+        let str1:String = Value::Bytes(bytes1.clone()).try_into().unwrap();
+        let str1_2:String = Value::Bytes(bytes1).try_into().unwrap();
+
+        let str2:String = Value::Bytes(bytes2).try_into().unwrap();
 
         assert_eq!(str1, str1_2);
         assert_ne!(str1, str2);

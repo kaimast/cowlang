@@ -103,12 +103,7 @@ pub enum IndentResult {
 
 pub fn get_next_indent(position: usize, indents: &mut BTreeMap::<usize, i32>) -> Option<IndentResult> {
 
-    let mut entry = if let Some(entry) = indents.first_entry() {
-        entry
-    } else {
-        return None;
-    };
-
+    let mut entry = indents.first_entry()?;
     let ipos = *entry.key();
 
     if ipos != position {
@@ -184,7 +179,7 @@ lexer! {
         // cut off the u8 at the end
         let i:i64 = tok[..tok.len()-2].parse().unwrap();
         
-        if i < 0 || i > 256 {
+        if !(0..=256).contains(&i) {
             panic!("Invalid u8 value: {}", i);
         }
 

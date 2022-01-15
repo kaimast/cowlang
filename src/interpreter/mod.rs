@@ -82,6 +82,7 @@ pub enum Handle {
 }
 
 impl Handle {
+    #[ must_use ]
     pub fn try_clone(&self) -> Self {
         match &self {
             Self::None => Self::None,
@@ -110,7 +111,7 @@ impl Handle {
 
     pub fn unwrap_value_ref(self) -> Rc<Cell<Value>> {
         if let Handle::Value(value) = self {
-            value.clone()
+            value
         } else {
             panic!("Handle is not a value!");
         }
@@ -149,7 +150,7 @@ impl Interpreter {
         let mut root_scopes = Scopes::new(modules, variables);
 
         for stmt in &program.stmts {
-            let (cflw, res) = self.step(&mut root_scopes, &stmt);
+            let (cflw, res) = self.step(&mut root_scopes, stmt);
 
             if ControlFlow::Return == cflw {
                 result = res.unwrap_value();
@@ -170,7 +171,7 @@ impl Interpreter {
                     scopes.push();
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, &stmt);
+                        let (cflw, res) = self.step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             return (cflw, res);
@@ -188,7 +189,7 @@ impl Interpreter {
                     scopes.push();
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, &stmt);
+                        let (cflw, res) = self.step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -201,7 +202,7 @@ impl Interpreter {
                     scopes.push();
 
                     for stmt in branch {
-                        let (cflw, res) = self.step(scopes, &stmt);
+                        let (cflw, res) = self.step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -215,7 +216,7 @@ impl Interpreter {
             }
             Expr::AddEquals{lhs, rhs} => {
                 let var = scopes.get(lhs).unwrap_value();
-                let right = self.step(scopes, &rhs).1.unwrap_value();
+                let right = self.step(scopes, rhs).1.unwrap_value();
                 let result = var.add(&right).unwrap();
 
                 scopes.update_variable(lhs, Handle::wrap_value(result));
@@ -262,7 +263,7 @@ impl Interpreter {
                     scopes.create_variable(target_name.clone(), Handle::wrap_value(val));
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, &stmt);
+                        let (cflw, res) = self.step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -281,20 +282,20 @@ impl Interpreter {
                 self.step(scopes, &*inner).1
             }
             Expr::Add{lhs, rhs} => {
-                let left = self.step(scopes, &lhs).1.unwrap_value();
-                let right = self.step(scopes, &rhs).1.unwrap_value();
+                let left = self.step(scopes, lhs).1.unwrap_value();
+                let right = self.step(scopes, rhs).1.unwrap_value();
 
                 Handle::wrap_value( left.add(&right).unwrap() )
             }
             Expr::Multiply{lhs, rhs} => {
-                let left = self.step(scopes, &lhs).1.unwrap_value();
-                let right = self.step(scopes, &rhs).1.unwrap_value();
+                let left = self.step(scopes, lhs).1.unwrap_value();
+                let right = self.step(scopes, rhs).1.unwrap_value();
 
                 Handle::wrap_value( left.multiply(&right).unwrap() )
             }
             Expr::Compare{ctype, lhs, rhs} => {
-                let left = self.step(scopes, &lhs).1.unwrap_value();
-                let right = self.step(scopes, &rhs).1.unwrap_value();
+                let left = self.step(scopes, lhs).1.unwrap_value();
+                let right = self.step(scopes, rhs).1.unwrap_value();
 
                 let result = match ctype {
                     CompareType::Greater => {
@@ -311,7 +312,7 @@ impl Interpreter {
                 Handle::wrap_value( result.into() )
             }
             Expr::Not(rhs) => {
-                let right = self.step(scopes, &rhs).1.unwrap_value();
+                let right = self.step(scopes, rhs).1.unwrap_value();
                 Handle::wrap_value( right.negate().unwrap() )
             }
             Expr::Assign(var, rhs) => {
@@ -548,7 +549,7 @@ impl Interpreter {
             }
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;
-                self.step(scopes, &rhs).1
+                self.step(scopes, rhs).1
             }
         };
 
