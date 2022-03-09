@@ -1,12 +1,12 @@
-use crate::ast::{Expr, CompareType, Program, ParseNode, ValueType};
+use crate::ast::{CompareType, Expr, ParseNode, Program, ValueType};
 use crate::values::{Value, ValueError};
 
-use std::convert::TryInto;
-use std::rc::Rc;
-use std::fmt::Debug;
-use std::mem;
 use std::cell::Cell;
 use std::collections::{hash_map, HashMap};
+use std::convert::TryInto;
+use std::fmt::Debug;
+use std::mem;
+use std::rc::Rc;
 
 mod scopes;
 use scopes::Scopes;
@@ -15,10 +15,10 @@ pub trait Module {
     fn get_member(&self, self_ptr: &Rc<dyn Module>, name: &str) -> Handle;
 }
 
-#[ derive(Default) ]
+#[derive(Default)]
 pub struct Interpreter {
     modules: HashMap<String, Rc<dyn Module>>,
-    variables: HashMap<String, Handle>
+    variables: HashMap<String, Handle>,
 }
 
 pub trait Callable {
@@ -30,12 +30,12 @@ pub trait Iterable {
 }
 
 struct ListIterable {
-    list: Vec<Value>
+    list: Vec<Value>,
 }
 
 impl ListIterable {
     pub fn new(list: Vec<Value>) -> Self {
-        Self{ list }
+        Self { list }
     }
 }
 
@@ -44,13 +44,15 @@ impl Iterable for ListIterable {
         if self.list.is_empty() {
             None
         } else {
-            Some( self.list.remove(0) )
+            Some(self.list.remove(0))
         }
     }
 }
 
 struct RangeIterable {
-    end: i64, step: i64, pos: i64
+    end: i64,
+    step: i64,
+    pos: i64,
 }
 
 impl Iterable for RangeIterable {
@@ -66,10 +68,10 @@ impl Iterable for RangeIterable {
     }
 }
 
-#[ derive(Debug, Clone, PartialEq) ]
+#[derive(Debug, Clone, PartialEq)]
 enum ControlFlow {
     Continue,
-    Return
+    Return,
 }
 
 pub enum Handle {
@@ -78,11 +80,11 @@ pub enum Handle {
     BuiltinCallable(Rc<Cell<Value>>, String),
     Object(Rc<dyn Module>),
     Callable(Box<dyn Callable>),
-    Iter(Box<dyn Iterable>)
+    Iter(Box<dyn Iterable>),
 }
 
 impl Handle {
-    #[ must_use ]
+    #[must_use]
     pub fn try_clone(&self) -> Self {
         match &self {
             Self::None => Self::None,
@@ -91,7 +93,9 @@ impl Handle {
             Self::BuiltinCallable(inner, name) => {
                 Self::BuiltinCallable(inner.clone(), name.clone())
             }
-            _ => { panic!("Cannot clone this handle"); }
+            _ => {
+                panic!("Cannot clone this handle");
+            }
         }
     }
 
@@ -116,9 +120,9 @@ impl Handle {
             panic!("Handle is not a value!");
         }
     }
- 
+
     pub fn wrap_value(val: Value) -> Self {
-        Handle::Value( Rc::new( Cell::new(val) ) )
+        Handle::Value(Rc::new(Cell::new(val)))
     }
 }
 
@@ -166,7 +170,11 @@ impl Interpreter {
         let mut control_flow = ControlFlow::Continue;
 
         let hdl = match expr {
-            Expr::IfElseRecursive{cond, body, else_branch} => {
+            Expr::IfElseRecursive {
+                cond,
+                body,
+                else_branch,
+            } => {
                 if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
                     scopes.push();
 
@@ -184,7 +192,11 @@ impl Interpreter {
                 }
                 Handle::None
             }
-            Expr::IfElse{cond, body, else_branch} => {
+            Expr::IfElse {
+                cond,
+                body,
+                else_branch,
+            } => {
                 if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
                     scopes.push();
 
@@ -214,7 +226,7 @@ impl Interpreter {
                 }
                 Handle::None
             }
-            Expr::AddEquals{lhs, rhs} => {
+            Expr::AddEquals { lhs, rhs } => {
                 let var = scopes.get(lhs).unwrap_value();
                 let right = self.step(scopes, rhs).1.unwrap_value();
                 let result = var.add(&right).unwrap();
@@ -226,14 +238,18 @@ impl Interpreter {
             Expr::AssignNew(var, rhs) => {
                 let val = self.step(scopes, rhs).1;
 
-                #[ cfg(feature="verbose") ]
+                #[cfg(feature = "verbose")]
                 println!("let {} = {:?}", var, val);
 
                 scopes.create_variable(var.clone(), val);
 
                 Handle::None
             }
-            Expr::ForIn{iter, target_name, body} => {
+            Expr::ForIn {
+                iter,
+                target_name,
+                body,
+            } => {
                 let hdl = self.step(scopes, iter).1;
 
                 let mut iter: Box<dyn Iterable> = match hdl {
@@ -242,7 +258,7 @@ impl Interpreter {
                         val_cpy.swap(&*val);
 
                         let res = if let Value::List(list) = val_cpy.get_mut() {
-                            Box::new( ListIterable::new(list.clone()) )
+                            Box::new(ListIterable::new(list.clone()))
                         } else {
                             let mut val_cpy = Cell::new(Value::None);
                             val_cpy.swap(&*val);
@@ -252,7 +268,7 @@ impl Interpreter {
                         val_cpy.swap(&*val);
                         res
                     }
-                    Handle::Iter(i) => { i }
+                    Handle::Iter(i) => i,
                     _ => {
                         panic!("Cannot iterate!");
                     }
@@ -275,70 +291,56 @@ impl Interpreter {
 
                 Handle::None
             }
-            Expr::Var(var) => {
-                scopes.get(var)
-            }
-            Expr::Brackets(inner) => {
-                self.step(scopes, &*inner).1
-            }
-            Expr::Add{lhs, rhs} => {
+            Expr::Var(var) => scopes.get(var),
+            Expr::Brackets(inner) => self.step(scopes, &*inner).1,
+            Expr::Add { lhs, rhs } => {
                 let left = self.step(scopes, lhs).1.unwrap_value();
                 let right = self.step(scopes, rhs).1.unwrap_value();
 
-                Handle::wrap_value( left.add(&right).unwrap() )
+                Handle::wrap_value(left.add(&right).unwrap())
             }
-            Expr::Multiply{lhs, rhs} => {
+            Expr::Multiply { lhs, rhs } => {
                 let left = self.step(scopes, lhs).1.unwrap_value();
                 let right = self.step(scopes, rhs).1.unwrap_value();
 
-                Handle::wrap_value( left.multiply(&right).unwrap() )
+                Handle::wrap_value(left.multiply(&right).unwrap())
             }
-            Expr::Compare{ctype, lhs, rhs} => {
+            Expr::Compare { ctype, lhs, rhs } => {
                 let left = self.step(scopes, lhs).1.unwrap_value();
                 let right = self.step(scopes, rhs).1.unwrap_value();
 
                 let result = match ctype {
-                    CompareType::Greater => {
-                        left.is_greater_than(&right).unwrap()
-                    }
-                    CompareType::Smaller => {
-                        left.is_smaller_than(&right).unwrap()
-                    }
-                    CompareType::Equals => {
-                        left.equals(&right).unwrap()
-                    }
+                    CompareType::Greater => left.is_greater_than(&right).unwrap(),
+                    CompareType::Smaller => left.is_smaller_than(&right).unwrap(),
+                    CompareType::Equals => left.equals(&right).unwrap(),
                 };
 
-                Handle::wrap_value( result.into() )
+                Handle::wrap_value(result.into())
             }
             Expr::Not(rhs) => {
                 let right = self.step(scopes, rhs).1.unwrap_value();
-                Handle::wrap_value( right.negate().unwrap() )
+                Handle::wrap_value(right.negate().unwrap())
             }
             Expr::Assign(var, rhs) => {
                 let val = self.step(scopes, rhs).1;
 
-                #[ cfg(feature="verbose") ]
+                #[cfg(feature = "verbose")]
                 println!("{} = {:?}", var, val);
 
                 scopes.update_variable(var, val);
                 Handle::None
-            },
+            }
             Expr::GetMember(rhs, name) => {
                 let res = self.step(scopes, rhs).1;
 
                 match res {
-                    Handle::Object(m) => {
-                        m.get_member(&m, name)
-                    }
-                    Handle::Value(val) => {
-                        Handle::BuiltinCallable(val, name.clone())
-                    }
+                    Handle::Object(m) => m.get_member(&m, name),
+                    Handle::Value(val) => Handle::BuiltinCallable(val, name.clone()),
                     _ => {
                         panic!("GetMember got unexpected Handle");
                     }
                 }
-            },
+            }
             Expr::Call(callee, args) => {
                 let res = self.step(scopes, callee).1;
                 let mut argv = Vec::new();
@@ -347,7 +349,7 @@ impl Interpreter {
                     if let Handle::Value(v) = self.step(scopes, arg).1 {
                         let mut val_cpy = Cell::new(Value::None);
                         val_cpy.swap(&*v);
- 
+
                         argv.push(val_cpy.get_mut().clone());
                         val_cpy.swap(&*v);
                     } else {
@@ -420,10 +422,8 @@ impl Interpreter {
 
                 Handle::wrap_value(res)
             }
-            Expr::String(s) => {
-                Handle::wrap_value( s.clone().into() )
-            }
-            Expr::Range{start, end, step} => {
+            Expr::String(s) => Handle::wrap_value(s.clone().into()),
+            Expr::Range { start, end, step } => {
                 let start = self.step(scopes, start).1.unwrap_value();
                 let end = self.step(scopes, end).1.unwrap_value();
 
@@ -443,9 +443,13 @@ impl Interpreter {
                     panic!("invalid step size: {}", step);
                 }
 
-                Handle::Iter( Box::new( RangeIterable{ end, step, pos: start } ))
+                Handle::Iter(Box::new(RangeIterable {
+                    end,
+                    step,
+                    pos: start,
+                }))
             }
-            Expr::Max{lhs, rhs} => {
+            Expr::Max { lhs, rhs } => {
                 let lhs = self.step(scopes, lhs).1.unwrap_value();
                 let rhs = self.step(scopes, rhs).1.unwrap_value();
 
@@ -466,7 +470,7 @@ impl Interpreter {
                 let result = std::cmp::max(lhs, rhs);
                 Handle::wrap_value(result.into())
             }
-            Expr::Min{lhs, rhs} => {
+            Expr::Min { lhs, rhs } => {
                 let lhs = self.step(scopes, lhs).1.unwrap_value();
                 let rhs = self.step(scopes, rhs).1.unwrap_value();
 
@@ -484,46 +488,45 @@ impl Interpreter {
                     }
                 };
 
-
                 let result = std::cmp::min(lhs, rhs);
                 Handle::wrap_value(result.into())
             }
             Expr::ToStr(inner) => {
                 let val = self.step(scopes, inner).1.unwrap_value();
 
-                #[ allow(clippy::match_wild_err_arm) ]
+                #[allow(clippy::match_wild_err_arm)]
                 let s: String = match val.try_into() {
-                    Ok(s) => { s}
-                    Err(_) => { panic!("Failed to convert to string"); }
+                    Ok(s) => s,
+                    Err(_) => {
+                        panic!("Failed to convert to string");
+                    }
                 };
 
-                Handle::wrap_value( s.into() )
+                Handle::wrap_value(s.into())
             }
-            Expr::Cast{value, typename} => {
-                match typename {
-                    ValueType::U8 => {
-                        let inner = self.step(scopes, value).1.unwrap_value();
+            Expr::Cast { value, typename } => match typename {
+                ValueType::U8 => {
+                    let inner = self.step(scopes, value).1.unwrap_value();
 
-                        let val: u8 = inner.try_into().unwrap();
-                        Handle::wrap_value( val.into() )
-                    }
-                    ValueType::I64 => {
-                        let inner = self.step(scopes, value).1.unwrap_value();
-
-                        let val: i64 = inner.try_into().unwrap();
-                        Handle::wrap_value( val.into() )
-                    }
-                    ValueType::U64 => {
-                        let inner = self.step(scopes, value).1.unwrap_value();
-
-                        let val: u64 = inner.try_into().unwrap();
-                        Handle::wrap_value( val.into() )
-                    }
-                    _ => {
-                        todo!();
-                    }
+                    let val: u8 = inner.try_into().unwrap();
+                    Handle::wrap_value(val.into())
                 }
-            }
+                ValueType::I64 => {
+                    let inner = self.step(scopes, value).1.unwrap_value();
+
+                    let val: i64 = inner.try_into().unwrap();
+                    Handle::wrap_value(val.into())
+                }
+                ValueType::U64 => {
+                    let inner = self.step(scopes, value).1.unwrap_value();
+
+                    let val: u64 = inner.try_into().unwrap();
+                    Handle::wrap_value(val.into())
+                }
+                _ => {
+                    todo!();
+                }
+            },
             Expr::List(elems) => {
                 let mut result = Value::make_list();
 
@@ -535,18 +538,10 @@ impl Interpreter {
 
                 Handle::wrap_value(result)
             }
-            Expr::Bool(b) => {
-                Handle::wrap_value( b.into())
-            }
-            Expr::I64(i) => {
-                Handle::wrap_value( i.into())
-            }
-            Expr::U64(i) => {
-                Handle::wrap_value( i.into() )
-            }
-            Expr::U8(i) => {
-                Handle::wrap_value((*i).into())
-            }
+            Expr::Bool(b) => Handle::wrap_value(b.into()),
+            Expr::I64(i) => Handle::wrap_value(i.into()),
+            Expr::U64(i) => Handle::wrap_value(i.into()),
+            Expr::U8(i) => Handle::wrap_value((*i).into()),
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;
                 self.step(scopes, rhs).1

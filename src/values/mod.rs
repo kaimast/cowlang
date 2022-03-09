@@ -1,23 +1,23 @@
 use std::collections::{hash_map, HashMap};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[ cfg(feature="python-bindings") ]
+#[cfg(feature = "python-bindings")]
 use pyo3::prelude::*;
 
-#[ cfg(feature="python-bindings") ]
+#[cfg(feature = "python-bindings")]
 use pyo3::exceptions::PyTypeError;
 
-#[ cfg(feature="python-bindings") ]
-use pyo3::{PyResult, FromPyObject, PyErr, IntoPy};
+#[cfg(feature = "python-bindings")]
+use pyo3::{FromPyObject, IntoPy, PyErr, PyResult};
 
-#[ cfg(feature="python-bindings") ]
+#[cfg(feature = "python-bindings")]
 use pyo3::types::*;
 
-#[ cfg(feature="hash") ]
-use digest::{Digest};
+#[cfg(feature = "hash")]
+use digest::Digest;
 
-#[ cfg(feature="hash") ]
+#[cfg(feature = "hash")]
 use byte_slice_cast::AsByteSlice;
 
 use serde_bytes::ByteBuf;
@@ -25,7 +25,7 @@ use serde_bytes::ByteBuf;
 mod error;
 pub use error::ValueError;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq) ]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum PrimitiveType {
     None,
     Any,
@@ -38,13 +38,13 @@ pub enum PrimitiveType {
     F64,
 }
 
-#[ derive(Serialize, Deserialize, PartialEq, Clone, Debug) ]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub enum TypeDefinition {
     Primitive(PrimitiveType),
     Array(Box<TypeDefinition>, usize),
     Map(Box<TypeDefinition>, Box<TypeDefinition>),
     List(Box<TypeDefinition>),
-    Bytes
+    Bytes,
 }
 
 impl TypeDefinition {
@@ -56,7 +56,7 @@ impl TypeDefinition {
 /// A variant data type used by the cowlang interpreter.
 ///
 /// *Note:* this uses heap allocation for all non-primitive types /// To keep the enum size small
-#[ derive(Serialize, Deserialize, Clone, Debug, PartialEq) ]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Value {
     None,
     Bool(bool),
@@ -68,18 +68,18 @@ pub enum Value {
     U8(u8),
     Map(Box<HashMap<String, Value>>),
     List(Vec<Value>),
-    Bytes(ByteBuf)
+    Bytes(ByteBuf),
 }
 
 impl Value {
-    #[ must_use ]
+    #[must_use]
     pub fn clone_as_value(&self) -> Value {
         self.clone()
     }
 
     /// Create an empty map value
     pub fn make_map() -> Value {
-        Value::Map(Box::new( HashMap::new() ))
+        Value::Map(Box::new(HashMap::new()))
     }
 
     /// Create an empty list
@@ -87,17 +87,15 @@ impl Value {
         Value::List(Vec::new())
     }
 
-    #[ cfg(feature="hash") ]
+    #[cfg(feature = "hash")]
     pub fn hash<Hasher: Digest>(&self, hasher: &mut Hasher) {
         match &self {
-            Value::Map(hashmap) =>
-            {
+            Value::Map(hashmap) => {
                 for val in hashmap.values() {
                     val.hash(hasher);
                 }
             }
-            Value::List(vec) =>
-            {
+            Value::List(vec) => {
                 for val in vec.iter() {
                     val.hash(hasher);
                 }
@@ -153,23 +151,17 @@ impl Value {
                     Err(ValueError::NoSuchChild)
                 }
             }
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
     /// Do a numeric comparison (>=) between this value and another
     pub fn is_greater_than(&self, other: &Value) -> Result<bool, ValueError> {
         let result = match &*self {
-            Value::I64(content) => {
-                content > &other.clone().try_into()?
-            }
-            Value::U64(content)  => {
-                content > &other.clone().try_into()?
-            }
-            Value::F64(content)  => {
-                content > &other.clone().try_into()?
-            }
-            _ => return Err(ValueError::TypeMismatch)
+            Value::I64(content) => content > &other.clone().try_into()?,
+            Value::U64(content) => content > &other.clone().try_into()?,
+            Value::F64(content) => content > &other.clone().try_into()?,
+            _ => return Err(ValueError::TypeMismatch),
         };
 
         Ok(result)
@@ -178,18 +170,10 @@ impl Value {
     /// Do a numeric comparison (==) between this value and another
     pub fn equals(&self, other: &Value) -> Result<bool, ValueError> {
         let result = match &*self {
-            Value::I64(content) => {
-                content == &other.clone().try_into()?
-            }
-            Value::U64(content)  => {
-                content == &other.clone().try_into()?
-            }
-            Value::Bool(content) => {
-                content == &other.clone().try_into()?
-            }
-            Value::F64(content)  => {
-                content == &other.clone().try_into()?
-            }
+            Value::I64(content) => content == &other.clone().try_into()?,
+            Value::U64(content) => content == &other.clone().try_into()?,
+            Value::Bool(content) => content == &other.clone().try_into()?,
+            Value::F64(content) => content == &other.clone().try_into()?,
             _ => {
                 return Err(ValueError::TypeMismatch);
             }
@@ -201,16 +185,10 @@ impl Value {
     /// Do a numeric comparison (<=) between this value and another
     pub fn is_smaller_than(&self, other: &Value) -> Result<bool, ValueError> {
         let result = match &*self {
-            Value::I64(content) => {
-                content < &other.clone().try_into()?
-            }
-            Value::U64(content)  => {
-                content < &other.clone().try_into()?
-            }
-            Value::F64(content)  => {
-                content < &other.clone().try_into()?
-            }
-            _ => return Err(ValueError::TypeMismatch)
+            Value::I64(content) => content < &other.clone().try_into()?,
+            Value::U64(content) => content < &other.clone().try_into()?,
+            Value::F64(content) => content < &other.clone().try_into()?,
+            _ => return Err(ValueError::TypeMismatch),
         };
 
         Ok(result)
@@ -223,17 +201,15 @@ impl Value {
                 let val: i64 = other.clone().try_into()?;
                 Ok((content * val).into())
             }
-            Value::U64(content)  => {
+            Value::U64(content) => {
                 let val: u64 = other.clone().try_into()?;
                 Ok((content * val).into())
             }
-            Value::F64(content)  => {
+            Value::F64(content) => {
                 let val: f64 = other.clone().try_into()?;
                 Ok((content * val).into())
             }
-            _ => {
-                Err(ValueError::OperationNotSupported)
-            }
+            _ => Err(ValueError::OperationNotSupported),
         }
     }
 
@@ -244,19 +220,19 @@ impl Value {
                 let val: i64 = other.clone().try_into()?;
                 (content + val).into()
             }
-            Value::U64(content)  => {
+            Value::U64(content) => {
                 let val: u64 = other.clone().try_into()?;
                 (content + val).into()
             }
-            Value::F64(content)  => {
+            Value::F64(content) => {
                 let val: f64 = other.clone().try_into()?;
                 (content + val).into()
             }
-             Value::U8(content) => {
+            Value::U8(content) => {
                 let val: u8 = other.clone().try_into()?;
                 (content + val).into()
             }
-            _ => return Err(ValueError::OperationNotSupported)
+            _ => return Err(ValueError::OperationNotSupported),
         };
 
         Ok(result)
@@ -267,10 +243,8 @@ impl Value {
     /// *Note:* This only works with booleans
     pub fn negate(&self) -> Result<Value, ValueError> {
         match &*self {
-            Value::Bool(content) => {
-                Ok((!content).into())
-            }
-            _ => Err(ValueError::OperationNotSupported)
+            Value::Bool(content) => Ok((!content).into()),
+            _ => Err(ValueError::OperationNotSupported),
         }
     }
 
@@ -288,7 +262,7 @@ impl Value {
                     Err(ValueError::NoSuchChild)
                 }
             }
-            _ => Err(ValueError::OperationNotSupported)
+            _ => Err(ValueError::OperationNotSupported),
         }
     }
 
@@ -306,21 +280,23 @@ impl Value {
                     Err(ValueError::NoSuchChild)
                 }
             }
-            _ => Err(ValueError::OperationNotSupported)
+            _ => Err(ValueError::OperationNotSupported),
         }
     }
 
-    /// Get or create a field 
-    pub fn get_or_create_mut<F: FnOnce() -> Value>(&mut self, key: String, func: F) -> Result<&mut Value, ValueError> {
+    /// Get or create a field
+    pub fn get_or_create_mut<F: FnOnce() -> Value>(
+        &mut self,
+        key: String,
+        func: F,
+    ) -> Result<&mut Value, ValueError> {
         if key.is_empty() {
             return Err(ValueError::InvalidKey);
         }
 
         match &mut *self {
-            Value::Map(content) => {
-                Ok( content.entry(key).or_insert_with(func) )
-            }
-            _ => Err(ValueError::TypeMismatch)
+            Value::Map(content) => Ok(content.entry(key).or_insert_with(func)),
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
@@ -330,11 +306,11 @@ impl Value {
         }
 
         match &mut *self {
-            Value::Map(content)  => {
+            Value::Map(content) => {
                 content.insert(key, value);
                 Ok(())
             }
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
@@ -348,19 +324,15 @@ impl Value {
 
     pub fn map_insert(&mut self, key: String, value: Value) -> Result<(), ValueError> {
         match &mut *self {
-            Value::Map(content) => {
-                match content.entry(key) {
-                    hash_map::Entry::Vacant(v) => {
-                        v.insert(value);
-                        Ok(())
-                    }
-                    hash_map::Entry::Occupied(_) => {
-                        Err(ValueError::FieldAlreadyExists)
-                    }
+            Value::Map(content) => match content.entry(key) {
+                hash_map::Entry::Vacant(v) => {
+                    v.insert(value);
+                    Ok(())
                 }
-            }
+                hash_map::Entry::Occupied(_) => Err(ValueError::FieldAlreadyExists),
+            },
             _ => Err(ValueError::TypeMismatch),
-        } 
+        }
     }
 
     pub fn get_child(&self, key: Value) -> Result<&Value, ValueError> {
@@ -386,9 +358,7 @@ impl Value {
                     Err(ValueError::IndexOutOfBounds)
                 }
             }
-            _ => {
-                Err(ValueError::TypeMismatch)
-            }
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
@@ -401,7 +371,7 @@ impl Value {
 
                 Ok(res)
             }
-            _ => Err(self)
+            _ => Err(self),
         }
     }
 
@@ -409,7 +379,7 @@ impl Value {
     pub fn into_vec(self) -> Result<Vec<Value>, ValueError> {
         match self {
             Value::List(content) => Ok(content),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 
@@ -422,10 +392,8 @@ impl Value {
                     Err(ValueError::NoSuchChild)
                 }
             }
-            _ => {
-                Err(ValueError::TypeMismatch)
-            }
-        } 
+            _ => Err(ValueError::TypeMismatch),
+        }
     }
 
     /// Append to the list (only works if this value is a list)
@@ -443,80 +411,95 @@ impl Value {
     pub fn as_bool(&self) -> Result<bool, ValueError> {
         match &self {
             Value::Bool(content) => Ok(*content),
-            Value::I64(content) =>  Ok(*content > 0),
-            Value::U64(content) =>  Ok(*content > 0),
-            _ => Err(ValueError::OperationNotSupported)
+            Value::I64(content) => Ok(*content > 0),
+            Value::U64(content) => Ok(*content > 0),
+            _ => Err(ValueError::OperationNotSupported),
         }
     }
 
     pub fn get_type(&self) -> TypeDefinition {
-        match &self{
-            Value::Bool(_content) => { TypeDefinition::Primitive(PrimitiveType::Bool)}
-            Value::Str(_content) => { TypeDefinition::Primitive(PrimitiveType::String) }
-            Value::I64(_content) => { TypeDefinition::Primitive(PrimitiveType::I64) }
-            Value::U64(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
-            Value::U8(_content) => { TypeDefinition::Primitive(PrimitiveType::U64) }
-            Value::F64(_content) => { TypeDefinition::Primitive(PrimitiveType::F64) }
-            Value::F32(_content) => { TypeDefinition::Primitive(PrimitiveType::F32) }
-            Value::Map(hashmap) =>
-            {
+        match &self {
+            Value::Bool(_content) => TypeDefinition::Primitive(PrimitiveType::Bool),
+            Value::Str(_content) => TypeDefinition::Primitive(PrimitiveType::String),
+            Value::I64(_content) => TypeDefinition::Primitive(PrimitiveType::I64),
+            Value::U64(_content) => TypeDefinition::Primitive(PrimitiveType::U64),
+            Value::U8(_content) => TypeDefinition::Primitive(PrimitiveType::U64),
+            Value::F64(_content) => TypeDefinition::Primitive(PrimitiveType::F64),
+            Value::F32(_content) => TypeDefinition::Primitive(PrimitiveType::F32),
+            Value::Map(hashmap) => {
                 let mut iterator = hashmap.values();
                 let val = Value::get_value_from_option(iterator.next());
                 let type_1 = Value::get_type(val);
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
-                while type_2 != TypeDefinition::Primitive(PrimitiveType::None){
-                    if type_1 != type_2{
-                        return TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(TypeDefinition::Primitive(PrimitiveType::Any))) ;
+                while type_2 != TypeDefinition::Primitive(PrimitiveType::None) {
+                    if type_1 != type_2 {
+                        return TypeDefinition::Map(
+                            Box::new(TypeDefinition::Primitive(PrimitiveType::String)),
+                            Box::new(TypeDefinition::Primitive(PrimitiveType::Any)),
+                        );
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 }
-                TypeDefinition::Map(Box::new(TypeDefinition::Primitive(PrimitiveType::String)), Box::new(type_1)) 
+                TypeDefinition::Map(
+                    Box::new(TypeDefinition::Primitive(PrimitiveType::String)),
+                    Box::new(type_1),
+                )
             }
-            Value::List(vec) =>
-            {
+            Value::List(vec) => {
                 let mut iterator = vec.iter();
                 let val = Value::get_value_from_option(iterator.next());
                 let type_1 = Value::get_type(val);
                 let mut type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
-                while type_2 != TypeDefinition::Primitive(PrimitiveType::None){
-                    if type_1 != type_2{
-                        return TypeDefinition::List(Box::new(TypeDefinition::Primitive(PrimitiveType::Any)));
+                while type_2 != TypeDefinition::Primitive(PrimitiveType::None) {
+                    if type_1 != type_2 {
+                        return TypeDefinition::List(Box::new(TypeDefinition::Primitive(
+                            PrimitiveType::Any,
+                        )));
                     }
                     type_2 = Value::get_type(Value::get_value_from_option(iterator.next()));
                 }
                 TypeDefinition::List(Box::new(type_1))
             }
-            Value::Bytes(_) => { TypeDefinition::Bytes }
-            Value::None => { TypeDefinition::Primitive(PrimitiveType::None) }
+            Value::Bytes(_) => TypeDefinition::Bytes,
+            Value::None => TypeDefinition::Primitive(PrimitiveType::None),
         }
     }
 
-    pub fn get_value_from_option(it: std::option::Option<&Value>) -> &Value{
-        match it{
-            Some(x) => {x}
-            None => {&Value::None}
+    pub fn get_value_from_option(it: std::option::Option<&Value>) -> &Value {
+        match it {
+            Some(x) => x,
+            None => &Value::None,
         }
     }
 
-    pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool{
+    pub fn type_check(meta_val: &TypeDefinition, val: &Value) -> bool {
         let v = Value::get_type(val);
         *meta_val == v
     }
 }
 
 impl From<&str> for Value {
-    fn from(s: &str) -> Self { Self::Str(s.to_string()) }
+    fn from(s: &str) -> Self {
+        Self::Str(s.to_string())
+    }
 }
 
 impl From<String> for Value {
-    fn from(s: String) -> Self { Self::Str(s) }
+    fn from(s: String) -> Self {
+        Self::Str(s)
+    }
 }
 
 impl From<ByteBuf> for Value {
-    fn from(b: ByteBuf) -> Self { Self::Bytes(b) }
+    fn from(b: ByteBuf) -> Self {
+        Self::Bytes(b)
+    }
 }
 
-impl<T> From<Vec<T>> for Value where T: Into<Value> {
+impl<T> From<Vec<T>> for Value
+where
+    T: Into<Value>,
+{
     fn from(mut vec: Vec<T>) -> Value {
         let mut res = Vec::<Value>::new();
 
@@ -539,7 +522,10 @@ impl TryInto<ByteBuf> for Value {
     }
 }
 
-impl<T> TryInto<Vec<T>> for Value where Value: TryInto<T> {
+impl<T> TryInto<Vec<T>> for Value
+where
+    Value: TryInto<T>,
+{
     type Error = ValueError;
 
     fn try_into(self) -> Result<Vec<T>, ValueError> {
@@ -547,9 +533,7 @@ impl<T> TryInto<Vec<T>> for Value where Value: TryInto<T> {
 
         let mut vec = match self.into_vec() {
             Ok(v) => v,
-            Err(e) => {
-                return Err(e)
-            }
+            Err(e) => return Err(e),
         };
 
         for val in vec.drain(..) {
@@ -569,8 +553,8 @@ impl TryInto<bool> for Value {
 
     fn try_into(self) -> Result<bool, ValueError> {
         match self {
-            Value::Bool(content) => { Ok(content) }
-            _ => { Err(ValueError::TypeMismatch) }
+            Value::Bool(content) => Ok(content),
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -595,7 +579,7 @@ impl TryInto<u8> for Value {
                     Err(ValueError::IntegerOverflow)
                 }
             }
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -608,7 +592,7 @@ impl TryInto<i64> for Value {
             Value::I64(content) => Ok(content),
             Value::U64(content) => Ok(content as i64),
             Value::F64(content) => Ok(content as i64),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -622,7 +606,7 @@ impl TryInto<f64> for Value {
             Value::U64(content) => Ok(content as f64),
             Value::F64(content) => Ok(content),
             Value::F32(content) => Ok(content as f64),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -636,7 +620,7 @@ impl TryInto<f32> for Value {
             Value::U64(content) => Ok(content as f32),
             Value::F64(content) => Ok(content as f32),
             Value::F32(content) => Ok(content),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -648,7 +632,7 @@ impl TryInto<u64> for Value {
         match self {
             Value::I64(content) => Ok(content as u64),
             Value::U64(content) => Ok(content),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
@@ -664,12 +648,15 @@ impl TryInto<String> for Value {
             Value::F32(f) => Ok(format!("{}", f)),
             Value::U64(u) => Ok(format!("{}", u)),
             Value::Bytes(b) => Ok(format!("{:#x?}", b)),
-            _ => Err(ValueError::TypeMismatch)
+            _ => Err(ValueError::TypeMismatch),
         }
     }
 }
 
-impl<T> From<&[T]> for Value where T: Into<Value>+Clone {
+impl<T> From<&[T]> for Value
+where
+    T: Into<Value> + Clone,
+{
     fn from(slice: &[T]) -> Self {
         let mut res = Vec::<Value>::new();
 
@@ -682,56 +669,78 @@ impl<T> From<&[T]> for Value where T: Into<Value>+Clone {
 }
 
 impl From<&i64> for Value {
-    fn from(i: &i64) -> Self { Self::I64(*i) }
+    fn from(i: &i64) -> Self {
+        Self::I64(*i)
+    }
 }
 
 impl From<&u64> for Value {
-    fn from(i: &u64) -> Self { Self::U64(*i) }
+    fn from(i: &u64) -> Self {
+        Self::U64(*i)
+    }
 }
 
 impl From<u8> for Value {
-    fn from(u: u8) -> Self { Self::U8(u) }
+    fn from(u: u8) -> Self {
+        Self::U8(u)
+    }
 }
 
 impl From<i64> for Value {
-    fn from(i: i64) -> Self { Self::I64(i) }
+    fn from(i: i64) -> Self {
+        Self::I64(i)
+    }
 }
 
 //FIXME have distinct i32 and u32 types
 impl From<i32> for Value {
-    fn from(i: i32) -> Self { Self::I64(i as i64) }
+    fn from(i: i32) -> Self {
+        Self::I64(i as i64)
+    }
 }
 
 impl From<f64> for Value {
-    fn from(f: f64) -> Self { Self::F64(f) }
+    fn from(f: f64) -> Self {
+        Self::F64(f)
+    }
 }
 
 impl From<f32> for Value {
-    fn from(f: f32) -> Self { Self::F32(f) }
+    fn from(f: f32) -> Self {
+        Self::F32(f)
+    }
 }
 
 impl From<u64> for Value {
-    fn from(i: u64) -> Self { Self::U64(i) }
+    fn from(i: u64) -> Self {
+        Self::U64(i)
+    }
 }
 
 impl From<usize> for Value {
-    fn from(i: usize) -> Self { Self::U64(i as u64) }
+    fn from(i: usize) -> Self {
+        Self::U64(i as u64)
+    }
 }
 
 impl From<&bool> for Value {
-    fn from(b: &bool) -> Self { Self::Bool(*b) }
+    fn from(b: &bool) -> Self {
+        Self::Bool(*b)
+    }
 }
 
 impl From<bool> for Value {
-    fn from(b: bool) -> Self{ Self::Bool(b) }
+    fn from(b: bool) -> Self {
+        Self::Bool(b)
+    }
 }
 
-#[ cfg(feature="python-bindings") ]
+#[cfg(feature = "python-bindings")]
 impl FromPyObject<'_> for Value {
     fn extract(obj: &PyAny) -> PyResult<Self> {
         if let Ok(string) = PyAny::downcast::<PyString>(obj) {
             let rs_str: String = string.extract()?;
-            return Ok( rs_str.into() );
+            return Ok(rs_str.into());
         }
 
         if let Ok(list) = PyAny::downcast::<PyList>(obj) {
@@ -740,28 +749,30 @@ impl FromPyObject<'_> for Value {
             for elem in list {
                 let child = match elem.extract() {
                     Ok(c) => c,
-                    Err(e) => { return Err(e); }
+                    Err(e) => {
+                        return Err(e);
+                    }
                 };
 
                 result.list_append(child).unwrap();
             }
 
-            return Ok( result);
+            return Ok(result);
         }
 
         if let Ok(pyfloat) = PyAny::downcast::<PyFloat>(obj) {
             let f: f64 = pyfloat.extract()?;
-            return Ok( f.into() );
+            return Ok(f.into());
         }
 
         if let Ok(pyint) = PyAny::downcast::<PyLong>(obj) {
             let i: i64 = pyint.extract()?;
-            return Ok( i.into() );
+            return Ok(i.into());
         }
 
         if let Ok(pyint) = PyAny::downcast::<PyInt>(obj) {
             let i: i64 = pyint.extract()?;
-            return Ok( i.into() );
+            return Ok(i.into());
         }
 
         if let Ok(pybytes) = PyAny::downcast::<PyBytes>(obj) {
@@ -793,38 +804,24 @@ impl FromPyObject<'_> for Value {
             return Ok(list);
         }
 
-        Err( PyErr::new::<PyTypeError, _>("Failed to convert PyObject to Value") )
+        Err(PyErr::new::<PyTypeError, _>(
+            "Failed to convert PyObject to Value",
+        ))
     }
 }
 
-#[ cfg(feature="python-bindings") ]
+#[cfg(feature = "python-bindings")]
 impl IntoPy<PyObject> for Value {
     fn into_py(self, py: Python) -> PyObject {
         match self {
-            Value::None => {
-                py.None()
-            }
-            Value::Str(string) => {
-                string.into_py(py)
-            }
-            Value::Bool(b) => {
-                b.into_py(py)
-            }
-            Value::I64(integer) => {
-                integer.into_py(py)
-            }
-            Value::F64(f) => {
-                f.into_py(py)
-            }
-            Value::F32(f) => {
-                f.into_py(py)
-            }
-            Value::U64(u) => {
-                u.into_py(py)
-            }
-            Value::U8(u) => {
-                u.into_py(py)
-            }
+            Value::None => py.None(),
+            Value::Str(string) => string.into_py(py),
+            Value::Bool(b) => b.into_py(py),
+            Value::I64(integer) => integer.into_py(py),
+            Value::F64(f) => f.into_py(py),
+            Value::F32(f) => f.into_py(py),
+            Value::U64(u) => u.into_py(py),
+            Value::U8(u) => u.into_py(py),
             Value::Map(mut map) => {
                 let map = map.as_mut();
                 let mut moved = HashMap::new();
@@ -832,9 +829,7 @@ impl IntoPy<PyObject> for Value {
                 std::mem::swap(map, &mut moved);
                 moved.clone().into_py(py)
             }
-            Value::List(list) => {
-                list.into_py(py)
-            }
+            Value::List(list) => list.into_py(py),
             Value::Bytes(bytes) => {
                 let bytes = bytes.as_ref();
                 PyBytes::new(py, bytes).into()
@@ -843,7 +838,7 @@ impl IntoPy<PyObject> for Value {
     }
 }
 
-#[ cfg(test) ]
+#[cfg(test)]
 mod tests {
     use crate::values::{Value, ValueError};
 
@@ -877,15 +872,15 @@ mod tests {
     #[test]
     fn bytes_to_str() {
         let mut bytes1 = ByteBuf::new();
-        bytes1.extend_from_slice(&[1,0,1]);
+        bytes1.extend_from_slice(&[1, 0, 1]);
 
         let mut bytes2 = ByteBuf::new();
-        bytes2.extend_from_slice(&[0,1,1]);
+        bytes2.extend_from_slice(&[0, 1, 1]);
 
-        let str1:String = Value::Bytes(bytes1.clone()).try_into().unwrap();
-        let str1_2:String = Value::Bytes(bytes1).try_into().unwrap();
+        let str1: String = Value::Bytes(bytes1.clone()).try_into().unwrap();
+        let str1_2: String = Value::Bytes(bytes1).try_into().unwrap();
 
-        let str2:String = Value::Bytes(bytes2).try_into().unwrap();
+        let str2: String = Value::Bytes(bytes2).try_into().unwrap();
 
         assert_eq!(str1, str1_2);
         assert_ne!(str1, str2);

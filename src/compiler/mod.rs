@@ -8,10 +8,12 @@ use std::fmt::Debug;
 use lexer::Lexer;
 use parser::parse;
 
-pub use lexer::{IndentResult, parse_indents, get_next_indent};
+pub use lexer::{get_next_indent, parse_indents, IndentResult};
 
 pub fn generate_compile_error<T>(input: &str, info: Option<(T, Span)>, e: &str) -> String
-        where T: Debug {
+where
+    T: Debug,
+{
     if let Some((token, span)) = info {
         // Get interesting area
         let mut pos = 0;
@@ -23,7 +25,7 @@ pub fn generate_compile_error<T>(input: &str, info: Option<(T, Span)>, e: &str) 
 
         while pos < span.lo {
             if it.next().unwrap() == '\n' {
-                start = pos+1;
+                start = pos + 1;
             }
 
             pos += 1;
@@ -53,23 +55,30 @@ pub fn generate_compile_error<T>(input: &str, info: Option<(T, Span)>, e: &str) 
             end = pos;
         }
 
-        format!("Got compile error at {:?} [{} to {}]:\n
+        format!(
+            "Got compile error at {:?} [{} to {}]:\n
                 |    {}\n\
-                |    {}", token, span.lo, span.hi, &input[start..end], msg)
+                |    {}",
+            token,
+            span.lo,
+            span.hi,
+            &input[start..end],
+            msg
+        )
     } else {
         format!("Got compile error: {:?}", e)
     }
 }
 
 pub fn compile_string(input: &str) -> Program {
-    #[ cfg(feature="verbose") ]
+    #[cfg(feature = "verbose")]
     let lexer = Lexer::new(input).inspect(|elem| println!("{:?}", elem));
- 
-    #[ cfg(not(feature="verbose")) ]
+
+    #[cfg(not(feature = "verbose"))]
     let lexer = Lexer::new(input);
-    
+
     match parse(lexer) {
-        Ok(p) => { p }
+        Ok(p) => p,
         Err((info, e)) => {
             panic!("{}", generate_compile_error(input, info, e));
         }

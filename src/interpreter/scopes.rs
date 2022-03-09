@@ -4,21 +4,26 @@ use std::collections::HashMap;
 
 use super::*;
 
-#[ derive(Default) ]
+#[derive(Default)]
 struct Scope {
     modules: HashMap<String, Rc<dyn Module>>,
-    variables: HashMap<String, Handle>
+    variables: HashMap<String, Handle>,
 }
 
 pub struct Scopes {
-    scopes: Vec<Scope>
+    scopes: Vec<Scope>,
 }
 
 impl Scopes {
-    pub fn new(modules: HashMap<String, Rc<dyn Module>>, variables: HashMap<String, Handle>) -> Self {
-        let scope = Scope{ modules, variables };
+    pub fn new(
+        modules: HashMap<String, Rc<dyn Module>>,
+        variables: HashMap<String, Handle>,
+    ) -> Self {
+        let scope = Scope { modules, variables };
 
-        Self{ scopes: vec![scope] }
+        Self {
+            scopes: vec![scope],
+        }
     }
 
     pub fn push(&mut self) {
@@ -32,7 +37,7 @@ impl Scopes {
             panic!("Cannot pop scope. Only one left");
         }
     }
-    
+
     pub fn get(&self, name: &str) -> Handle {
         for scope in self.scopes.iter().rev() {
             if let Some(m) = scope.modules.get(name) {
@@ -59,7 +64,6 @@ impl Scopes {
     }
 
     pub fn update_variable(&mut self, name: &str, val: Handle) {
-
         for scope in self.scopes.iter_mut().rev() {
             if let Some(var) = scope.variables.get_mut(name) {
                 *var = val;

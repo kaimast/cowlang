@@ -1,10 +1,10 @@
 use plex::lexer;
-use std::collections::BTreeMap;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 
 use crate::ast::{Span, ValueType};
 
-#[ derive(Debug, Clone) ]
+#[derive(Debug, Clone)]
 pub enum Token {
     BoolLiteral(bool),
     I64Literal(i64),
@@ -45,10 +45,10 @@ pub enum Token {
     Dedent,
     Colon,
     If,
-    Else
+    Else,
 }
 
-pub fn parse_indents(s: &str) -> BTreeMap::<usize, i32> {
+pub fn parse_indents(s: &str) -> BTreeMap<usize, i32> {
     let mut indents = BTreeMap::new();
     let mut is_newline = false;
     let mut current_icount = 0;
@@ -59,7 +59,7 @@ pub fn parse_indents(s: &str) -> BTreeMap::<usize, i32> {
             current_icount += 1;
         } else if c != ' ' && is_newline {
             loop {
-                let top = last_icount[last_icount.len()-1];
+                let top = last_icount[last_icount.len() - 1];
 
                 match current_icount.cmp(&top) {
                     Ordering::Less => {
@@ -98,11 +98,13 @@ pub fn parse_indents(s: &str) -> BTreeMap::<usize, i32> {
 pub enum IndentResult {
     Indent,
     Dedent,
-    Newline
+    Newline,
 }
 
-pub fn get_next_indent(position: usize, indents: &mut BTreeMap::<usize, i32>) -> Option<IndentResult> {
-
+pub fn get_next_indent(
+    position: usize,
+    indents: &mut BTreeMap<usize, i32>,
+) -> Option<IndentResult> {
     let mut entry = indents.first_entry()?;
     let ipos = *entry.key();
 
@@ -178,7 +180,7 @@ lexer! {
     "[0-9]+u8" => {
         // cut off the u8 at the end
         let i:i64 = tok[..tok.len()-2].parse().unwrap();
-        
+
         if !(0..=256).contains(&i) {
             panic!("Invalid u8 value: {}", i);
         }
@@ -197,7 +199,6 @@ lexer! {
     "." => panic!("Lexer got unexpected character: {}", tok),
 }
 
-
 pub struct Lexer<'a> {
     original: &'a str,
     remaining: &'a str,
@@ -206,7 +207,7 @@ pub struct Lexer<'a> {
     empty_line: bool,
 
     indents: BTreeMap<usize, i32>,
-    position: usize
+    position: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -218,25 +219,32 @@ impl<'a> Lexer<'a> {
         let at_end = false;
         let empty_line = true;
 
-        Self{original: s, remaining: s, indents,
-            position, at_start, at_end, empty_line}
+        Self {
+            original: s,
+            remaining: s,
+            indents,
+            position,
+            at_start,
+            at_end,
+            empty_line,
+        }
     }
 }
 
 impl<'a> Iterator for Lexer<'a> {
     type Item = (Token, Span);
     fn next(&mut self) -> Option<(Token, Span)> {
-        // skip over whitespace and comments 
+        // skip over whitespace and comments
         loop {
             if let Some(res) = get_next_indent(self.position, &mut self.indents) {
                 let token = match res {
                     IndentResult::Newline => Token::Newline,
                     IndentResult::Indent => Token::Indent,
-                    IndentResult::Dedent => Token::Dedent
+                    IndentResult::Dedent => Token::Dedent,
                 };
 
                 let ipos = self.position;
-                let span = Span{ lo: ipos, hi: ipos };
+                let span = Span { lo: ipos, hi: ipos };
 
                 self.empty_line = false;
                 return Some((token, span));
@@ -262,7 +270,13 @@ impl<'a> Iterator for Lexer<'a> {
                         return None;
                     } else {
                         // Treat EOF as new line
-                        (Token::Newline, Span{lo: self.original.len(), hi: self.original.len()})
+                        (
+                            Token::Newline,
+                            Span {
+                                lo: self.original.len(),
+                                hi: self.original.len(),
+                            },
+                        )
                     }
                 }
             };
@@ -270,13 +284,13 @@ impl<'a> Iterator for Lexer<'a> {
             self.position = span.hi;
 
             match tok {
-                Token::Whitespace | Token::Comment{0: _} => {
+                Token::Whitespace | Token::Comment { 0: _ } => {
                     continue;
                 }
                 // ignore empty lines
                 Token::Newline => {
                     if self.empty_line {
-                        continue; 
+                        continue;
                     } else {
                         self.empty_line = true;
                         return Some((tok, span));

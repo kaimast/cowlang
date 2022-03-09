@@ -1,10 +1,10 @@
-use super::lexer::Token::*;
 use super::lexer::Token;
+use super::lexer::Token::*;
 
 use crate::ast::*;
 
-use std::collections::HashMap;
 use plex::parser;
+use std::collections::HashMap;
 
 parser! {
     fn parse_(Token, Span);
@@ -204,6 +204,8 @@ parser! {
 
 type ParseItem = (Token, Span);
 
-pub fn parse<I: Iterator<Item = ParseItem>>(i: I) -> Result<Program, (Option<ParseItem>, &'static str)> {
+pub fn parse<I: Iterator<Item = ParseItem>>(
+    i: I,
+) -> Result<Program, (Option<ParseItem>, &'static str)> {
     parse_(i)
 }
