@@ -1,8 +1,11 @@
 [package]
 name = "cowlang-derive"
 version = "0.1.0"
-authors = ["Kai Mast <kai@kaimast.edu>"]
+authors = ["Kai Mast <kai@kaimast.com>"]
 edition = "2021"
+repository = "https://github.com/kaimast/cowlang"
+description = "A simple Python-like scripting language: Macros"
+license-file = "../LICENSE"
 
 [dependencies]
 syn = { version="2", features=["full", "extra-traits"] }
