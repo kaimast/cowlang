@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Kai Mast <kai@kaimast.com>"]
 edition = "2021"
 description = "A simple Python-like scripting language"
-license-file = "LICENSE.md"
+license-file = "LICENSE"
 
 [dependencies]
 bincode = { version="1.2" }
