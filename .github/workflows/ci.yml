@@ -27,7 +27,7 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose
-        cargo test --package=cowlang-dervie --verbose
+        cargo test --package=cowlang-derive --verbose
     - name: Check formatting
       run: |
         cargo fmt --check
