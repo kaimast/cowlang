@@ -11,15 +11,15 @@ env:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
+ 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - name: Install rustc and clippy
+      uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: nightly
-        override: true
+         toolchain: stable 
+         components: cargo, rustc, clippy, rustfmt
     - name: Build
       run: cargo build --verbose
     - name: Run tests
