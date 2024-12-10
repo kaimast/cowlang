@@ -1,0 +1,15 @@
+[package]
+name = "cowlang-derive"
+version = "0.1.0"
+authors = ["Kai Mast <kai@kaimast.edu>"]
+edition = "2021"
+
+[dependencies]
+syn = { version="2", features=["full", "extra-traits"] }
+quote = "1"
+
+[dev-dependencies]
+cowlang = { path=".." }
+
+[lib]
+proc-macro = true

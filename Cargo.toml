@@ -6,6 +6,9 @@ edition = "2021"
 description = "A simple Python-like scripting language"
 license-file = "LICENSE"
 
+[workspace]
+members = ["cowlang-derive"]
+
 [dependencies]
 bincode = { version="1.2" }
 serde = { version="1.0", features=["derive"] }
