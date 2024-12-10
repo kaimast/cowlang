@@ -138,7 +138,8 @@ checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 [[package]]
 name = "plex"
 version = "0.3.1"
-source = "git+https://github.com/kaimast/plex.git#23541bd8b438c05fa5031fccdb1a1e7905be251a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d8fc09f81816d9530a29fc1a879c7b4a6b94c3a50bb9d5626a58ae15ca34360"
 dependencies = [
  "lalr",
  "proc-macro2",
