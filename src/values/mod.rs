@@ -79,7 +79,7 @@ impl Value {
 
     /// Create an empty map value
     pub fn make_map() -> Value {
-        Value::Map(Box::new(HashMap::new()))
+        Value::Map(Box::default())
     }
 
     /// Create an empty list
@@ -143,7 +143,7 @@ impl Value {
             return Err(ValueError::InvalidKey);
         }
 
-        match &*self {
+        match self {
             Value::Map(content) => {
                 if let Some(val) = content.get(key) {
                     Ok(val)
@@ -157,7 +157,7 @@ impl Value {
 
     /// Do a numeric comparison (>=) between this value and another
     pub fn is_greater_than(&self, other: &Value) -> Result<bool, ValueError> {
-        let result = match &*self {
+        let result = match self {
             Value::I64(content) => content > &other.clone().try_into()?,
             Value::U64(content) => content > &other.clone().try_into()?,
             Value::F64(content) => content > &other.clone().try_into()?,
@@ -169,7 +169,7 @@ impl Value {
 
     /// Do a numeric comparison (==) between this value and another
     pub fn equals(&self, other: &Value) -> Result<bool, ValueError> {
-        let result = match &*self {
+        let result = match self {
             Value::I64(content) => content == &other.clone().try_into()?,
             Value::U64(content) => content == &other.clone().try_into()?,
             Value::Bool(content) => content == &other.clone().try_into()?,
@@ -184,7 +184,7 @@ impl Value {
 
     /// Do a numeric comparison (<=) between this value and another
     pub fn is_smaller_than(&self, other: &Value) -> Result<bool, ValueError> {
-        let result = match &*self {
+        let result = match self {
             Value::I64(content) => content < &other.clone().try_into()?,
             Value::U64(content) => content < &other.clone().try_into()?,
             Value::F64(content) => content < &other.clone().try_into()?,
@@ -196,7 +196,7 @@ impl Value {
 
     /// Multiply this value with another (numerals only)
     pub fn multiply(&self, other: &Value) -> Result<Value, ValueError> {
-        match &*self {
+        match self {
             Value::I64(content) => {
                 let val: i64 = other.clone().try_into()?;
                 Ok((content * val).into())
@@ -215,7 +215,7 @@ impl Value {
 
     /// Sum this value with another (numerals only)
     pub fn add(&self, other: &Value) -> Result<Value, ValueError> {
-        let result = match &*self {
+        let result = match self {
             Value::I64(content) => {
                 let val: i64 = other.clone().try_into()?;
                 (content + val).into()
@@ -242,7 +242,7 @@ impl Value {
     ///
     /// *Note:* This only works with booleans
     pub fn negate(&self) -> Result<Value, ValueError> {
-        match &*self {
+        match self {
             Value::Bool(content) => Ok((!content).into()),
             _ => Err(ValueError::OperationNotSupported),
         }
@@ -315,7 +315,7 @@ impl Value {
     }
 
     pub fn num_children(&self) -> usize {
-        match &*self {
+        match self {
             Value::Map(content) => content.len(),
             Value::List(content) => content.len(),
             _ => 0,
@@ -336,7 +336,7 @@ impl Value {
     }
 
     pub fn get_child(&self, key: Value) -> Result<&Value, ValueError> {
-        match &*self {
+        match self {
             Value::Map(content) => {
                 //FIXME map should allow other index types too
                 let kstr: String = key.try_into()?;
@@ -384,7 +384,7 @@ impl Value {
     }
 
     pub fn list_get_at(&self, position: usize) -> Result<&Value, ValueError> {
-        match &*self {
+        match self {
             Value::List(content) => {
                 if let Some(c) = content.get(position) {
                     Ok(c)
@@ -530,11 +530,7 @@ where
 
     fn try_into(self) -> Result<Vec<T>, ValueError> {
         let mut res = Vec::new();
-
-        let mut vec = match self.into_vec() {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        let mut vec = self.into_vec()?;
 
         for val in vec.drain(..) {
             if let Ok(val) = val.try_into() {

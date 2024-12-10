@@ -11,6 +11,7 @@ pub enum Token {
     U64Literal(u64),
     U8Literal(u8),
     StringLiteral(String),
+    #[allow(dead_code)]
     Comment(String),
     Identifier(String),
     TypeName(ValueType),
@@ -231,7 +232,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Iterator for Lexer<'a> {
+impl Iterator for Lexer<'_> {
     type Item = (Token, Span);
     fn next(&mut self) -> Option<(Token, Span)> {
         // skip over whitespace and comments
