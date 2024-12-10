@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyTypeError;
 
 #[cfg(feature = "python-bindings")]
-use pyo3::{FromPyObject, BoundObject, IntoPyObject, PyErr, PyResult};
+use pyo3::{BoundObject, FromPyObject, IntoPyObject, PyErr, PyResult};
 
 #[cfg(feature = "python-bindings")]
 use pyo3::types::*;
@@ -174,9 +174,9 @@ impl Value {
 
         let result = match self {
             Value::I64(content) => content == &TryInto::<i64>::try_into(other)?,
-            Value::U64(content) => content ==  &TryInto::<u64>::try_into(other)?,
-            Value::Bool(content) => content ==  &TryInto::<bool>::try_into(other)?,
-            Value::F64(content) => content ==  &TryInto::<f64>::try_into(other)?,
+            Value::U64(content) => content == &TryInto::<u64>::try_into(other)?,
+            Value::Bool(content) => content == &TryInto::<bool>::try_into(other)?,
+            Value::F64(content) => content == &TryInto::<f64>::try_into(other)?,
             _ => {
                 return Err(ValueError::TypeMismatch);
             }
@@ -813,20 +813,13 @@ impl<'a> IntoPyObject<'a> for Value {
     fn into_pyobject(self, py: Python<'a>) -> Result<Self::Output, Self::Error> {
         match self {
             Value::None => Ok(py.None().into_bound(py)),
-            Value::Str(string) => Ok(string.into_pyobject(py)
-                .unwrap().into_any()),
-            Value::Bool(b) => Ok(b.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
-            Value::I64(integer) => Ok(integer.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
-            Value::F64(f) => Ok(f.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
-            Value::F32(f) => Ok(f.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
-            Value::U64(u) => Ok(u.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
-            Value::U8(u) => Ok(u.into_pyobject(py)
-                .unwrap().into_bound().into_any()),
+            Value::Str(string) => Ok(string.into_pyobject(py).unwrap().into_any()),
+            Value::Bool(b) => Ok(b.into_pyobject(py).unwrap().into_bound().into_any()),
+            Value::I64(integer) => Ok(integer.into_pyobject(py).unwrap().into_bound().into_any()),
+            Value::F64(f) => Ok(f.into_pyobject(py).unwrap().into_bound().into_any()),
+            Value::F32(f) => Ok(f.into_pyobject(py).unwrap().into_bound().into_any()),
+            Value::U64(u) => Ok(u.into_pyobject(py).unwrap().into_bound().into_any()),
+            Value::U8(u) => Ok(u.into_pyobject(py).unwrap().into_bound().into_any()),
             Value::Map(mut map) => {
                 let map = map.as_mut();
                 let mut moved = HashMap::new();
