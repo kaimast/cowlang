@@ -2,6 +2,7 @@
 name = "cowlang"
 version = "0.1.0"
 authors = ["Kai Mast <kai@kaimast.com>"]
+repository = "https://github.com/kaimast/cowlang"
 edition = "2021"
 description = "A simple Python-like scripting language"
 license-file = "LICENSE"
