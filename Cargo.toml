@@ -15,6 +15,7 @@ pyo3 = { version="0.23", optional=true }
 
 [features]
 default = ["compiler", "interpreter"]
+all = ["default", "python-bindings"]
 verbose = []
 python-bindings = ["dep:pyo3"]
 compiler = ["dep:plex"]

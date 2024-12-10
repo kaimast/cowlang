@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyTypeError;
 
 #[cfg(feature = "python-bindings")]
-use pyo3::{FromPyObject, IntoPy, PyErr, PyResult};
+use pyo3::{FromPyObject, BoundObject, IntoPyObject, PyErr, PyResult};
 
 #[cfg(feature = "python-bindings")]
 use pyo3::types::*;
@@ -169,11 +169,14 @@ impl Value {
 
     /// Do a numeric comparison (==) between this value and another
     pub fn equals(&self, other: &Value) -> Result<bool, ValueError> {
+        // TODO borrowed try-into is not implemented yet
+        let other = other.clone();
+
         let result = match self {
-            Value::I64(content) => content == &other.clone().try_into()?,
-            Value::U64(content) => content == &other.clone().try_into()?,
-            Value::Bool(content) => content == &other.clone().try_into()?,
-            Value::F64(content) => content == &other.clone().try_into()?,
+            Value::I64(content) => content == &TryInto::<i64>::try_into(other)?,
+            Value::U64(content) => content ==  &TryInto::<u64>::try_into(other)?,
+            Value::Bool(content) => content ==  &TryInto::<bool>::try_into(other)?,
+            Value::F64(content) => content ==  &TryInto::<f64>::try_into(other)?,
             _ => {
                 return Err(ValueError::TypeMismatch);
             }
@@ -733,13 +736,13 @@ impl From<bool> for Value {
 
 #[cfg(feature = "python-bindings")]
 impl FromPyObject<'_> for Value {
-    fn extract(obj: &PyAny) -> PyResult<Self> {
-        if let Ok(string) = PyAny::downcast::<PyString>(obj) {
+    fn extract_bound(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
+        if let Ok(string) = obj.downcast::<PyString>() {
             let rs_str: String = string.extract()?;
             return Ok(rs_str.into());
         }
 
-        if let Ok(list) = PyAny::downcast::<PyList>(obj) {
+        if let Ok(list) = obj.downcast::<PyList>() {
             let mut result = Value::make_list();
 
             for elem in list {
@@ -756,29 +759,24 @@ impl FromPyObject<'_> for Value {
             return Ok(result);
         }
 
-        if let Ok(pyfloat) = PyAny::downcast::<PyFloat>(obj) {
+        if let Ok(pyfloat) = obj.downcast::<PyFloat>() {
             let f: f64 = pyfloat.extract()?;
             return Ok(f.into());
         }
 
-        if let Ok(pyint) = PyAny::downcast::<PyLong>(obj) {
+        if let Ok(pyint) = obj.downcast::<PyInt>() {
             let i: i64 = pyint.extract()?;
             return Ok(i.into());
         }
 
-        if let Ok(pyint) = PyAny::downcast::<PyInt>(obj) {
-            let i: i64 = pyint.extract()?;
-            return Ok(i.into());
-        }
-
-        if let Ok(pybytes) = PyAny::downcast::<PyBytes>(obj) {
+        if let Ok(pybytes) = obj.downcast::<PyBytes>() {
             let mut vec = Vec::new();
             vec.extend_from_slice(pybytes.as_bytes());
             let bytes = ByteBuf::from(vec);
             return Ok(bytes.into());
         }
 
-        if let Ok(pydict) = PyAny::downcast::<PyDict>(obj) {
+        if let Ok(pydict) = obj.downcast::<PyDict>() {
             let mut dict = Value::make_map();
 
             for (k, v) in pydict.iter() {
@@ -790,7 +788,7 @@ impl FromPyObject<'_> for Value {
             return Ok(dict);
         }
 
-        if let Ok(pylist) = PyAny::downcast::<PyList>(obj) {
+        if let Ok(pylist) = obj.downcast::<PyList>() {
             let mut list = Value::make_list();
 
             for v in pylist.iter() {
@@ -807,28 +805,39 @@ impl FromPyObject<'_> for Value {
 }
 
 #[cfg(feature = "python-bindings")]
-impl IntoPy<PyObject> for Value {
-    fn into_py(self, py: Python) -> PyObject {
+impl<'a> IntoPyObject<'a> for Value {
+    type Target = PyAny;
+    type Error = PyErr;
+    type Output = Bound<'a, Self::Target>;
+
+    fn into_pyobject(self, py: Python<'a>) -> Result<Self::Output, Self::Error> {
         match self {
-            Value::None => py.None(),
-            Value::Str(string) => string.into_py(py),
-            Value::Bool(b) => b.into_py(py),
-            Value::I64(integer) => integer.into_py(py),
-            Value::F64(f) => f.into_py(py),
-            Value::F32(f) => f.into_py(py),
-            Value::U64(u) => u.into_py(py),
-            Value::U8(u) => u.into_py(py),
+            Value::None => Ok(py.None().into_bound(py)),
+            Value::Str(string) => Ok(string.into_pyobject(py)
+                .unwrap().into_any()),
+            Value::Bool(b) => Ok(b.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
+            Value::I64(integer) => Ok(integer.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
+            Value::F64(f) => Ok(f.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
+            Value::F32(f) => Ok(f.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
+            Value::U64(u) => Ok(u.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
+            Value::U8(u) => Ok(u.into_pyobject(py)
+                .unwrap().into_bound().into_any()),
             Value::Map(mut map) => {
                 let map = map.as_mut();
                 let mut moved = HashMap::new();
 
                 std::mem::swap(map, &mut moved);
-                moved.clone().into_py(py)
+                moved.clone().into_pyobject(py).map(|o| o.into_any())
             }
-            Value::List(list) => list.into_py(py),
+            Value::List(list) => list.into_pyobject(py),
             Value::Bytes(bytes) => {
                 let bytes = bytes.as_ref();
-                PyBytes::new(py, bytes).into()
+                Ok(PyBytes::new(py, bytes).into_any())
             }
         }
     }
