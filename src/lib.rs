@@ -5,11 +5,11 @@
     clippy::match_single_binding,
     clippy::let_unit_value,
     clippy::unit_arg,
+    clippy::ptr_arg,
     clippy::comparison_chain,
     clippy::unnested_or_patterns,
     unused_braces
 )]
-#![feature(map_first_last)]
 
 pub mod ast;
 

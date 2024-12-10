@@ -154,7 +154,7 @@ impl Interpreter {
         let mut root_scopes = Scopes::new(modules, variables);
 
         for stmt in &program.stmts {
-            let (cflw, res) = self.step(&mut root_scopes, stmt);
+            let (cflw, res) = Self::step(&mut root_scopes, stmt);
 
             if ControlFlow::Return == cflw {
                 result = res.unwrap_value();
@@ -165,7 +165,7 @@ impl Interpreter {
         result
     }
 
-    fn step(&mut self, scopes: &mut Scopes, stmt: &ParseNode) -> (ControlFlow, Handle) {
+    fn step(scopes: &mut Scopes, stmt: &ParseNode) -> (ControlFlow, Handle) {
         let (_span, expr) = stmt;
         let mut control_flow = ControlFlow::Continue;
 
@@ -175,11 +175,11 @@ impl Interpreter {
                 body,
                 else_branch,
             } => {
-                if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
+                if Self::step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
                     scopes.push();
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, stmt);
+                        let (cflw, res) = Self::step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             return (cflw, res);
@@ -188,7 +188,7 @@ impl Interpreter {
 
                     scopes.pop();
                 } else {
-                    return self.step(scopes, else_branch);
+                    return Self::step(scopes, else_branch);
                 }
                 Handle::None
             }
@@ -197,11 +197,11 @@ impl Interpreter {
                 body,
                 else_branch,
             } => {
-                if self.step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
+                if Self::step(scopes, cond).1.unwrap_value().as_bool().unwrap() {
                     scopes.push();
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, stmt);
+                        let (cflw, res) = Self::step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -214,7 +214,7 @@ impl Interpreter {
                     scopes.push();
 
                     for stmt in branch {
-                        let (cflw, res) = self.step(scopes, stmt);
+                        let (cflw, res) = Self::step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -228,7 +228,7 @@ impl Interpreter {
             }
             Expr::AddEquals { lhs, rhs } => {
                 let var = scopes.get(lhs).unwrap_value();
-                let right = self.step(scopes, rhs).1.unwrap_value();
+                let right = Self::step(scopes, rhs).1.unwrap_value();
                 let result = var.add(&right).unwrap();
 
                 scopes.update_variable(lhs, Handle::wrap_value(result));
@@ -236,7 +236,7 @@ impl Interpreter {
                 Handle::None
             }
             Expr::AssignNew(var, rhs) => {
-                let val = self.step(scopes, rhs).1;
+                let val = Self::step(scopes, rhs).1;
 
                 #[cfg(feature = "verbose")]
                 println!("let {} = {:?}", var, val);
@@ -250,7 +250,7 @@ impl Interpreter {
                 target_name,
                 body,
             } => {
-                let hdl = self.step(scopes, iter).1;
+                let hdl = Self::step(scopes, iter).1;
 
                 let mut iter: Box<dyn Iterable> = match hdl {
                     Handle::Value(val) => {
@@ -279,7 +279,7 @@ impl Interpreter {
                     scopes.create_variable(target_name.clone(), Handle::wrap_value(val));
 
                     for stmt in body {
-                        let (cflw, res) = self.step(scopes, stmt);
+                        let (cflw, res) = Self::step(scopes, stmt);
 
                         if cflw == ControlFlow::Return {
                             scopes.pop();
@@ -292,22 +292,22 @@ impl Interpreter {
                 Handle::None
             }
             Expr::Var(var) => scopes.get(var),
-            Expr::Brackets(inner) => self.step(scopes, &*inner).1,
+            Expr::Brackets(inner) => Self::step(scopes, inner).1,
             Expr::Add { lhs, rhs } => {
-                let left = self.step(scopes, lhs).1.unwrap_value();
-                let right = self.step(scopes, rhs).1.unwrap_value();
+                let left = Self::step(scopes, lhs).1.unwrap_value();
+                let right = Self::step(scopes, rhs).1.unwrap_value();
 
                 Handle::wrap_value(left.add(&right).unwrap())
             }
             Expr::Multiply { lhs, rhs } => {
-                let left = self.step(scopes, lhs).1.unwrap_value();
-                let right = self.step(scopes, rhs).1.unwrap_value();
+                let left = Self::step(scopes, lhs).1.unwrap_value();
+                let right = Self::step(scopes, rhs).1.unwrap_value();
 
                 Handle::wrap_value(left.multiply(&right).unwrap())
             }
             Expr::Compare { ctype, lhs, rhs } => {
-                let left = self.step(scopes, lhs).1.unwrap_value();
-                let right = self.step(scopes, rhs).1.unwrap_value();
+                let left = Self::step(scopes, lhs).1.unwrap_value();
+                let right = Self::step(scopes, rhs).1.unwrap_value();
 
                 let result = match ctype {
                     CompareType::Greater => left.is_greater_than(&right).unwrap(),
@@ -318,11 +318,11 @@ impl Interpreter {
                 Handle::wrap_value(result.into())
             }
             Expr::Not(rhs) => {
-                let right = self.step(scopes, rhs).1.unwrap_value();
+                let right = Self::step(scopes, rhs).1.unwrap_value();
                 Handle::wrap_value(right.negate().unwrap())
             }
             Expr::Assign(var, rhs) => {
-                let val = self.step(scopes, rhs).1;
+                let val = Self::step(scopes, rhs).1;
 
                 #[cfg(feature = "verbose")]
                 println!("{} = {:?}", var, val);
@@ -331,7 +331,7 @@ impl Interpreter {
                 Handle::None
             }
             Expr::GetMember(rhs, name) => {
-                let res = self.step(scopes, rhs).1;
+                let res = Self::step(scopes, rhs).1;
 
                 match res {
                     Handle::Object(m) => m.get_member(&m, name),
@@ -342,11 +342,11 @@ impl Interpreter {
                 }
             }
             Expr::Call(callee, args) => {
-                let res = self.step(scopes, callee).1;
+                let res = Self::step(scopes, callee).1;
                 let mut argv = Vec::new();
 
                 for arg in args {
-                    if let Handle::Value(v) = self.step(scopes, arg).1 {
+                    if let Handle::Value(v) = Self::step(scopes, arg).1 {
                         let mut val_cpy = Cell::new(Value::None);
                         val_cpy.swap(&*v);
 
@@ -398,13 +398,13 @@ impl Interpreter {
                 }
             }
             Expr::GetElement(callee, k) => {
-                let res = self.step(scopes, callee).1.unwrap_value();
-                let key = self.step(scopes, k).1.unwrap_value();
+                let res = Self::step(scopes, callee).1.unwrap_value();
+                let key = Self::step(scopes, k).1.unwrap_value();
 
                 match res.get_child(key) {
                     Ok(c) => Handle::wrap_value(c.clone()),
                     Err(ValueError::NoSuchChild) => {
-                        let key = self.step(scopes, k).1.unwrap_value();
+                        let key = Self::step(scopes, k).1.unwrap_value();
                         panic!("No such child '{:?}' in '{:?}'", key, res);
                     }
                     Err(e) => {
@@ -416,7 +416,7 @@ impl Interpreter {
                 let mut res = Value::make_map();
 
                 for (k, v) in kvs {
-                    let elem = self.step(scopes, v).1.unwrap_value();
+                    let elem = Self::step(scopes, v).1.unwrap_value();
                     res.map_insert(k.clone(), elem).unwrap();
                 }
 
@@ -424,14 +424,14 @@ impl Interpreter {
             }
             Expr::String(s) => Handle::wrap_value(s.clone().into()),
             Expr::Range { start, end, step } => {
-                let start = self.step(scopes, start).1.unwrap_value();
-                let end = self.step(scopes, end).1.unwrap_value();
+                let start = Self::step(scopes, start).1.unwrap_value();
+                let end = Self::step(scopes, end).1.unwrap_value();
 
                 let start: i64 = start.try_into().unwrap();
                 let end: i64 = end.try_into().unwrap();
 
                 let step: i64 = if let Some(s) = step {
-                    let step = self.step(scopes, s).1.unwrap_value();
+                    let step = Self::step(scopes, s).1.unwrap_value();
                     step.try_into().unwrap()
                 } else {
                     1
@@ -450,8 +450,8 @@ impl Interpreter {
                 }))
             }
             Expr::Max { lhs, rhs } => {
-                let lhs = self.step(scopes, lhs).1.unwrap_value();
-                let rhs = self.step(scopes, rhs).1.unwrap_value();
+                let lhs = Self::step(scopes, lhs).1.unwrap_value();
+                let rhs = Self::step(scopes, rhs).1.unwrap_value();
 
                 let lhs: i64 = match lhs.try_into() {
                     Ok(i) => i,
@@ -471,8 +471,8 @@ impl Interpreter {
                 Handle::wrap_value(result.into())
             }
             Expr::Min { lhs, rhs } => {
-                let lhs = self.step(scopes, lhs).1.unwrap_value();
-                let rhs = self.step(scopes, rhs).1.unwrap_value();
+                let lhs = Self::step(scopes, lhs).1.unwrap_value();
+                let rhs = Self::step(scopes, rhs).1.unwrap_value();
 
                 let lhs: i64 = match lhs.try_into() {
                     Ok(i) => i,
@@ -492,7 +492,7 @@ impl Interpreter {
                 Handle::wrap_value(result.into())
             }
             Expr::ToStr(inner) => {
-                let val = self.step(scopes, inner).1.unwrap_value();
+                let val = Self::step(scopes, inner).1.unwrap_value();
 
                 #[allow(clippy::match_wild_err_arm)]
                 let s: String = match val.try_into() {
@@ -506,19 +506,19 @@ impl Interpreter {
             }
             Expr::Cast { value, typename } => match typename {
                 ValueType::U8 => {
-                    let inner = self.step(scopes, value).1.unwrap_value();
+                    let inner = Self::step(scopes, value).1.unwrap_value();
 
                     let val: u8 = inner.try_into().unwrap();
                     Handle::wrap_value(val.into())
                 }
                 ValueType::I64 => {
-                    let inner = self.step(scopes, value).1.unwrap_value();
+                    let inner = Self::step(scopes, value).1.unwrap_value();
 
                     let val: i64 = inner.try_into().unwrap();
                     Handle::wrap_value(val.into())
                 }
                 ValueType::U64 => {
-                    let inner = self.step(scopes, value).1.unwrap_value();
+                    let inner = Self::step(scopes, value).1.unwrap_value();
 
                     let val: u64 = inner.try_into().unwrap();
                     Handle::wrap_value(val.into())
@@ -531,7 +531,7 @@ impl Interpreter {
                 let mut result = Value::make_list();
 
                 for e in elems {
-                    let elem = self.step(scopes, e).1.unwrap_value();
+                    let elem = Self::step(scopes, e).1.unwrap_value();
 
                     result.list_append(elem).unwrap();
                 }
@@ -544,7 +544,7 @@ impl Interpreter {
             Expr::U8(i) => Handle::wrap_value((*i).into()),
             Expr::Return(rhs) => {
                 control_flow = ControlFlow::Return;
-                self.step(scopes, rhs).1
+                Self::step(scopes, rhs).1
             }
         };
 

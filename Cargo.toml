@@ -11,12 +11,13 @@ serde_bytes = "0.11"
 plex = { git="https://github.com/kaimast/plex.git", optional=true }
 digest = { version="0.9", optional=true }
 byte-slice-cast = { version="0.3", optional=true }
-pyo3 = { version="0.15", optional=true }
+pyo3 = { version="0.23", optional=true }
 
 [features]
 default = ["compiler", "interpreter"]
+all = ["default", "python-bindings"]
 verbose = []
-python-bindings = ["pyo3"]
-compiler = ["plex"]
+python-bindings = ["dep:pyo3"]
+compiler = ["dep:plex"]
 interpreter = []
-hash = ["digest", "byte-slice-cast"]
+hash = ["dep:digest", "dep:byte-slice-cast"]
