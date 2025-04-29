@@ -17,7 +17,7 @@ serde_bytes = "0.11"
 plex = { version="0.3", optional=true }
 digest = { version="0.10", optional=true }
 byte-slice-cast = { version="1", optional=true }
-pyo3 = { version="0.23", optional=true }
+pyo3 = { version="0.24", optional=true }
 
 [features]
 default = ["compiler", "interpreter"]

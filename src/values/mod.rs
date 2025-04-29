@@ -87,7 +87,9 @@ impl Value {
         Value::List(Vec::new())
     }
 
+    /// Generate a cryptographic hash for this value
     #[cfg(feature = "hash")]
+    #[allow(clippy::should_implement_trait)]
     pub fn hash<Hasher: Digest>(&self, hasher: &mut Hasher) {
         match &self {
             Value::Map(hashmap) => {
@@ -106,9 +108,9 @@ impl Value {
             Value::None => {}
             Value::Bool(content) => {
                 if *content {
-                    hasher.update(&[1]);
+                    hasher.update([1]);
                 } else {
-                    hasher.update(&[0]);
+                    hasher.update([0]);
                 }
             }
             Value::I64(content) => {

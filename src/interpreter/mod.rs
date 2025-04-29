@@ -238,9 +238,6 @@ impl Interpreter {
             Expr::AssignNew(var, rhs) => {
                 let val = Self::step(scopes, rhs).1;
 
-                #[cfg(feature = "verbose")]
-                println!("let {} = {:?}", var, val);
-
                 scopes.create_variable(var.clone(), val);
 
                 Handle::None
@@ -323,9 +320,6 @@ impl Interpreter {
             }
             Expr::Assign(var, rhs) => {
                 let val = Self::step(scopes, rhs).1;
-
-                #[cfg(feature = "verbose")]
-                println!("{} = {:?}", var, val);
 
                 scopes.update_variable(var, val);
                 Handle::None
